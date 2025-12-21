@@ -417,7 +417,7 @@ const Game = {
             this.player = new Player(start1.x, start1.y, 1);
         } else {
             this.player.respawnAt(start1.x, start1.y);
-            this.player.lives = 3;
+            // Don't reset lives - they persist across levels
             this.player.coinsCollected = 0;
         }
 
@@ -427,7 +427,7 @@ const Game = {
             this.player2 = new Player(start2.x, start2.y, 2);
         } else {
             this.player2.respawnAt(start2.x, start2.y);
-            this.player2.lives = 3;
+            // Don't reset lives - they persist across levels
             this.player2.coinsCollected = 0;
         }
 
