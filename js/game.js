@@ -504,8 +504,8 @@ const Game = {
             this.completeVersusLevel();
         }
 
-        // Check if both players are eliminated
-        if (!this.player.alive && !this.player2.alive) {
+        // Check if either player is eliminated - game over
+        if (!this.player.alive || !this.player2.alive) {
             this.state = 'versusComplete';
         }
     },
@@ -579,14 +579,14 @@ const Game = {
         }
 
         if (died && player.lives > 0) {
-            // Player died but has lives left - respawn
-            const spawnPos = player.playerId === 1
-                ? this.maze.getStartPosition()
-                : this.maze.getPlayer2StartPosition();
+            // Player died but has lives left - respawn at random location
+            const otherPlayer = player.playerId === 1 ? this.player2 : this.player;
+            const spawnPos = this.maze.getRandomPathCell(otherPlayer, 150);
             player.respawnAt(spawnPos.x, spawnPos.y);
         } else if (died && player.lives <= 0) {
-            // Player eliminated
+            // Player eliminated - game over
             Audio.play('gameOver');
+            this.state = 'versusComplete';
         }
     },
 
