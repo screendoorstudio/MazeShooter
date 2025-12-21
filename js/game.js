@@ -8,10 +8,11 @@ const Game = {
     COINS_PER_LEVEL: 20,
 
     // Game state
-    state: 'modeSelect', // 'modeSelect', 'start', 'playing', 'levelComplete', 'gameOver', 'switchPlayer', 'finalResults'
+    state: 'modeSelect', // 'modeSelect', 'start', 'playing', 'levelComplete', 'gameOver', 'switchPlayer', 'finalResults', 'versusComplete'
 
     // Game mode
     twoPlayerMode: false,
+    versusMode: false, // Simultaneous two-player mode
     currentPlayer: 1, // 1 or 2
 
     // Player stats (savedState stores maze, coins, aliens when switching)
@@ -20,10 +21,17 @@ const Game = {
         2: { level: 1, totalStars: 0, lives: 3, finished: false, savedState: null }
     },
 
+    // Versus mode stats
+    versusStats: {
+        1: { totalCoins: 0, roundWins: 0 },
+        2: { totalCoins: 0, roundWins: 0 }
+    },
+
     level: 1,
     totalStars: 0,
     maze: null,
     player: null,
+    player2: null, // Second player for versus mode
     lastTime: 0,
     gameTime: 0,
 
@@ -52,8 +60,10 @@ const Game = {
         requestAnimationFrame((time) => this.gameLoop(time));
     },
 
-    selectMode(twoPlayer) {
-        this.twoPlayerMode = twoPlayer;
+    selectMode(mode) {
+        // mode: 'single', 'alternating', or 'versus'
+        this.twoPlayerMode = (mode === 'alternating');
+        this.versusMode = (mode === 'versus');
         this.state = 'start';
     },
 
@@ -234,25 +244,45 @@ const Game = {
         switch (this.state) {
             case 'modeSelect':
                 if (Input.wasJustPressed('Digit1') || Input.wasJustPressed('Numpad1')) {
-                    this.selectMode(false);
+                    this.selectMode('single');
                 } else if (Input.wasJustPressed('Digit2') || Input.wasJustPressed('Numpad2')) {
-                    this.selectMode(true);
+                    this.selectMode('alternating');
+                } else if (Input.wasJustPressed('Digit3') || Input.wasJustPressed('Numpad3')) {
+                    this.selectMode('versus');
                 }
                 break;
 
             case 'start':
                 if (Input.wasJustPressed('Space')) {
-                    this.startGame();
+                    if (this.versusMode) {
+                        this.startVersusGame();
+                    } else {
+                        this.startGame();
+                    }
                 }
                 break;
 
             case 'playing':
-                this.updatePlaying(deltaTime);
+                if (this.versusMode) {
+                    this.updateVersus(deltaTime);
+                } else {
+                    this.updatePlaying(deltaTime);
+                }
                 break;
 
             case 'levelComplete':
                 if (Input.wasJustPressed('Space')) {
-                    this.nextLevel();
+                    if (this.versusMode) {
+                        this.nextVersusLevel();
+                    } else {
+                        this.nextLevel();
+                    }
+                }
+                break;
+
+            case 'versusComplete':
+                if (Input.wasJustPressed('Space')) {
+                    this.nextVersusLevel();
                 }
                 break;
 
@@ -363,6 +393,172 @@ const Game = {
         Audio.play('levelComplete');
     },
 
+    // ========== VERSUS MODE FUNCTIONS ==========
+
+    startVersusGame() {
+        this.level = 1;
+        this.versusStats = {
+            1: { totalCoins: 0, roundWins: 0 },
+            2: { totalCoins: 0, roundWins: 0 }
+        };
+
+        this.startVersusLevel();
+        this.state = 'playing';
+        Audio.resume();
+    },
+
+    startVersusLevel() {
+        // Generate new maze
+        this.maze = new Maze(this.MAZE_COLS, this.MAZE_ROWS, this.cellSize);
+
+        // Initialize Player 1 at top-left
+        const start1 = this.maze.getStartPosition();
+        if (!this.player) {
+            this.player = new Player(start1.x, start1.y, 1);
+        } else {
+            this.player.respawnAt(start1.x, start1.y);
+            this.player.lives = 3;
+            this.player.coinsCollected = 0;
+        }
+
+        // Initialize Player 2 at bottom-right
+        const start2 = this.maze.getPlayer2StartPosition();
+        if (!this.player2) {
+            this.player2 = new Player(start2.x, start2.y, 2);
+        } else {
+            this.player2.respawnAt(start2.x, start2.y);
+            this.player2.lives = 3;
+            this.player2.coinsCollected = 0;
+        }
+
+        // Initialize coins
+        CoinManager.init(this.maze, this.COINS_PER_LEVEL);
+
+        // Initialize aliens with split targeting
+        AlienManager.initVersus(this.maze, this.level, this.player, this.player2);
+
+        // Clear projectiles
+        ProjectileManager.clear();
+
+        this.gameTime = 0;
+    },
+
+    nextVersusLevel() {
+        // Record round winner
+        const winner = CoinManager.getWinner();
+        if (winner) {
+            this.versusStats[winner].roundWins++;
+        }
+
+        // Add coins to total
+        this.versusStats[1].totalCoins += CoinManager.getCoinsForPlayer(1);
+        this.versusStats[2].totalCoins += CoinManager.getCoinsForPlayer(2);
+
+        this.level++;
+        this.startVersusLevel();
+        this.state = 'playing';
+    },
+
+    updateVersus(deltaTime) {
+        this.gameTime += deltaTime;
+
+        // Update both players
+        if (this.player.alive) {
+            this.player.update(deltaTime, this.maze);
+        }
+        if (this.player2.alive) {
+            this.player2.update(deltaTime, this.maze);
+        }
+
+        // Update coins for both players
+        CoinManager.updateVersus(deltaTime, this.player, this.player2);
+
+        // Update aliens
+        AlienManager.updateVersus(deltaTime, this.maze, this.player, this.player2);
+
+        // Update projectiles
+        ProjectileManager.update(deltaTime, this.maze);
+
+        // Check projectile hits on both players
+        this.checkVersusProjectileHits();
+
+        // Check alien collision with both players
+        this.checkVersusAlienCollisions();
+
+        // Check if all coins collected (level complete)
+        if (CoinManager.allCollected()) {
+            this.completeVersusLevel();
+        }
+
+        // Check if both players are eliminated
+        if (!this.player.alive && !this.player2.alive) {
+            this.state = 'versusComplete';
+        }
+    },
+
+    checkVersusProjectileHits() {
+        // Get all projectiles
+        const projectiles = ProjectileManager.projectiles.filter(p => p.active);
+
+        for (const proj of projectiles) {
+            // Check hits on player 1
+            if (this.player.alive && !this.player.invincible && proj.ownerId !== 1) {
+                if (proj.hits(this.player)) {
+                    proj.active = false;
+                    this.handleVersusPlayerHit(this.player);
+                    continue;
+                }
+            }
+
+            // Check hits on player 2
+            if (this.player2.alive && !this.player2.invincible && proj.ownerId !== 2) {
+                if (proj.hits(this.player2)) {
+                    proj.active = false;
+                    this.handleVersusPlayerHit(this.player2);
+                }
+            }
+        }
+    },
+
+    checkVersusAlienCollisions() {
+        // Check player 1
+        if (this.player.alive && !this.player.invincible) {
+            if (AlienManager.checkPlayerCollision(this.player)) {
+                this.handleVersusPlayerHit(this.player);
+            }
+        }
+
+        // Check player 2
+        if (this.player2.alive && !this.player2.invincible) {
+            if (AlienManager.checkPlayerCollision(this.player2)) {
+                this.handleVersusPlayerHit(this.player2);
+            }
+        }
+    },
+
+    handleVersusPlayerHit(player) {
+        Renderer.triggerFlash('rgba(255, 0, 0, 0.4)');
+
+        // Use versus hit system (3 hits = death)
+        const died = player.takeVersusHit();
+
+        if (died && player.lives > 0) {
+            // Player died but has lives left - respawn
+            const spawnPos = player.playerId === 1
+                ? this.maze.getStartPosition()
+                : this.maze.getPlayer2StartPosition();
+            player.respawnAt(spawnPos.x, spawnPos.y);
+        } else if (died && player.lives <= 0) {
+            // Player eliminated
+            Audio.play('gameOver');
+        }
+    },
+
+    completeVersusLevel() {
+        this.state = 'versusComplete';
+        Audio.play('levelComplete');
+    },
+
     render() {
         // Clear canvas
         Renderer.clear();
@@ -378,16 +574,29 @@ const Game = {
                 break;
 
             case 'start':
-                Renderer.drawStartScreen(this.twoPlayerMode);
+                Renderer.drawStartScreen(this.twoPlayerMode, this.versusMode);
                 break;
 
             case 'playing':
-                this.renderPlaying();
+                if (this.versusMode) {
+                    this.renderVersus();
+                } else {
+                    this.renderPlaying();
+                }
                 break;
 
             case 'levelComplete':
-                this.renderPlaying();
+                if (this.versusMode) {
+                    this.renderVersus();
+                } else {
+                    this.renderPlaying();
+                }
                 Renderer.drawLevelComplete(this.level, CoinManager.getStars(), this.twoPlayerMode, this.currentPlayer);
+                break;
+
+            case 'versusComplete':
+                this.renderVersus();
+                Renderer.drawVersusComplete(this.level, CoinManager, this.versusStats, this.player, this.player2);
                 break;
 
             case 'switchPlayer':
@@ -420,6 +629,24 @@ const Game = {
 
         // Update HUD
         Renderer.updateHUD(this.player, CoinManager, this.level, CoinManager.getStars(), this.twoPlayerMode, this.currentPlayer);
+    },
+
+    renderVersus() {
+        // Draw game entities
+        CoinManager.draw(Renderer.ctx, this.gameTime);
+        AlienManager.draw(Renderer.ctx, this.gameTime);
+
+        // Draw both players
+        this.player.draw(Renderer.ctx);
+        this.player2.draw(Renderer.ctx);
+
+        ProjectileManager.draw(Renderer.ctx);
+
+        // Draw screen flash effect
+        Renderer.drawScreenFlash();
+
+        // Update versus HUD
+        Renderer.updateVersusHUD(this.player, this.player2, CoinManager, this.level);
     }
 };
 

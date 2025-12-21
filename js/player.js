@@ -1,8 +1,26 @@
 // Player Class - Camouflage Army Man
 class Player {
-    constructor(x, y) {
+    // Color schemes for different players
+    static COLOR_SCHEMES = {
+        1: { // Player 1 - Olive Green
+            body: '#4a6741',
+            camo1: '#3d5c3c',
+            camo2: '#5a7a51',
+            helmet: '#3d5c3c'
+        },
+        2: { // Player 2 - Navy Blue
+            body: '#264d8a',
+            camo1: '#1e3f66',
+            camo2: '#3a6bb8',
+            helmet: '#1e3f66'
+        }
+    };
+
+    constructor(x, y, playerId = 1) {
         this.x = x;
         this.y = y;
+        this.playerId = playerId;
+        this.colorScheme = Player.COLOR_SCHEMES[playerId] || Player.COLOR_SCHEMES[1];
         this.radius = 12;
         this.speed = 150; // pixels per second
         this.direction = 'right'; // facing direction
@@ -13,6 +31,9 @@ class Player {
         this.invincibleDuration = 2; // seconds of invincibility after respawn
         this.lives = 3;
         this.alive = true;
+        // Versus mode properties
+        this.hitsTaken = 0; // Track hits for versus mode (3 hits = death)
+        this.coinsCollected = 0; // Track coins for versus mode
     }
 
     update(deltaTime, maze) {
@@ -31,8 +52,8 @@ class Player {
             this.shootCooldown -= deltaTime;
         }
 
-        // Get movement input
-        const movement = Input.getMovementVector();
+        // Get movement input based on player ID
+        const movement = Input.getMovementVectorForPlayer(this.playerId);
 
         // Update facing direction based on movement
         if (movement.dx !== 0 || movement.dy !== 0) {
@@ -105,8 +126,8 @@ class Player {
             }
         }
 
-        // Handle shooting
-        if (Input.wasJustPressed('Space') && this.shootCooldown <= 0) {
+        // Handle shooting - use shift keys for versus mode, space for legacy
+        if ((Input.isShootPressed(this.playerId) || Input.wasJustPressed('Space')) && this.shootCooldown <= 0) {
             this.shoot();
         }
     }
@@ -134,7 +155,7 @@ class Player {
                 break;
         }
 
-        const projectile = new Projectile(spawnX, spawnY, this.direction, true);
+        const projectile = new Projectile(spawnX, spawnY, this.direction, this.playerId);
         ProjectileManager.add(projectile);
         this.shootCooldown = this.shootCooldownTime;
 
@@ -164,13 +185,13 @@ class Player {
         ctx.rotate(rotation);
 
         // Draw camouflage body (oval)
-        ctx.fillStyle = '#4a6741';
+        ctx.fillStyle = this.colorScheme.body;
         ctx.beginPath();
         ctx.ellipse(0, 0, this.radius, this.radius * 0.8, 0, 0, Math.PI * 2);
         ctx.fill();
 
         // Camouflage pattern
-        ctx.fillStyle = '#3d5c3c';
+        ctx.fillStyle = this.colorScheme.camo1;
         ctx.beginPath();
         ctx.ellipse(-3, -3, 4, 3, 0.5, 0, Math.PI * 2);
         ctx.fill();
@@ -178,13 +199,13 @@ class Player {
         ctx.ellipse(4, 2, 3, 2, -0.3, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.fillStyle = '#5a7a51';
+        ctx.fillStyle = this.colorScheme.camo2;
         ctx.beginPath();
         ctx.ellipse(0, 4, 3, 2, 0.2, 0, Math.PI * 2);
         ctx.fill();
 
         // Helmet
-        ctx.fillStyle = '#3d5c3c';
+        ctx.fillStyle = this.colorScheme.helmet;
         ctx.beginPath();
         ctx.arc(0, -2, 7, Math.PI, 0);
         ctx.fill();
@@ -241,5 +262,51 @@ class Player {
         this.invincible = true;
         this.invincibleTime = this.invincibleDuration;
         this.shootCooldown = 0;
+        this.hitsTaken = 0;
+        this.coinsCollected = 0;
+    }
+
+    // Versus mode: Take a hit (3 hits = death)
+    // Returns true if player died from this hit
+    takeVersusHit() {
+        if (this.invincible || !this.alive) return false;
+
+        this.hitsTaken++;
+        Audio.play('playerHit');
+
+        if (this.hitsTaken >= 3) {
+            // Player is killed - lose a life
+            this.hitsTaken = 0;
+            this.lives--;
+
+            if (this.lives <= 0) {
+                this.alive = false;
+                return true; // Player eliminated
+            }
+
+            // Respawn with invincibility (handled by game.js)
+            return true; // Died but has lives left
+        }
+
+        // Hit but not dead - brief invincibility
+        this.invincible = true;
+        this.invincibleTime = 0.5; // Short invincibility after hit
+        return false;
+    }
+
+    // Reset hits (called on respawn)
+    resetHits() {
+        this.hitsTaken = 0;
+    }
+
+    // Respawn at a specific position (for versus mode)
+    respawnAt(x, y) {
+        this.x = x;
+        this.y = y;
+        this.direction = 'right';
+        this.invincible = true;
+        this.invincibleTime = this.invincibleDuration;
+        this.alive = true;
+        this.hitsTaken = 0;
     }
 }

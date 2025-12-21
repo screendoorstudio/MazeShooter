@@ -118,20 +118,23 @@ const Renderer = {
         // Mode options
         const blink = Math.floor(Date.now() / 500) % 2;
 
-        ctx.font = 'bold 28px Arial';
+        ctx.font = 'bold 24px Arial';
         ctx.fillStyle = blink ? '#2ecc71' : '#27ae60';
-        ctx.fillText('Press 1 for Single Player', this.width / 2, this.height / 2 + 20);
+        ctx.fillText('Press 1 for Single Player', this.width / 2, this.height / 2 + 10);
 
         ctx.fillStyle = blink ? '#9b59b6' : '#8e44ad';
-        ctx.fillText('Press 2 for Two Players', this.width / 2, this.height / 2 + 70);
+        ctx.fillText('Press 2 for Two Players (Alternating)', this.width / 2, this.height / 2 + 50);
+
+        ctx.fillStyle = blink ? '#e74c3c' : '#c0392b';
+        ctx.fillText('Press 3 for Versus Mode', this.width / 2, this.height / 2 + 90);
 
         // Description
         ctx.fillStyle = '#7f8c8d';
-        ctx.font = '16px Arial';
-        ctx.fillText('(Players alternate when hit - highest score wins!)', this.width / 2, this.height / 2 + 110);
+        ctx.font = '14px Arial';
+        ctx.fillText('Versus: Both players compete simultaneously!', this.width / 2, this.height / 2 + 130);
     },
 
-    drawStartScreen(twoPlayerMode = false) {
+    drawStartScreen(twoPlayerMode = false, versusMode = false) {
         const ctx = this.ctx;
 
         // Dark overlay
@@ -142,33 +145,54 @@ const Renderer = {
         ctx.fillStyle = '#3498db';
         ctx.font = 'bold 48px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('MAZE SHOOTER', this.width / 2, this.height / 2 - 80);
+        ctx.fillText('MAZE SHOOTER', this.width / 2, this.height / 2 - 100);
 
         // Mode indicator
-        if (twoPlayerMode) {
+        if (versusMode) {
+            ctx.fillStyle = '#e74c3c';
+            ctx.font = 'bold 24px Arial';
+            ctx.fillText('VERSUS MODE', this.width / 2, this.height / 2 - 60);
+
+            // Versus instructions
+            ctx.fillStyle = '#ecf0f1';
+            ctx.font = '16px Arial';
+            ctx.fillText('P1: Arrow Keys + Right Shift to Shoot', this.width / 2, this.height / 2 - 20);
+            ctx.fillText('P2: WASD + Left Shift to Shoot', this.width / 2, this.height / 2 + 5);
+
+            ctx.fillStyle = '#ffd700';
+            ctx.font = '18px Arial';
+            ctx.fillText('Collect the most coins to win!', this.width / 2, this.height / 2 + 40);
+            ctx.fillText('3 hits = lose a life (3 lives each)', this.width / 2, this.height / 2 + 65);
+        } else if (twoPlayerMode) {
             ctx.fillStyle = '#9b59b6';
             ctx.font = 'bold 24px Arial';
-            ctx.fillText('TWO PLAYER MODE', this.width / 2, this.height / 2 - 40);
+            ctx.fillText('TWO PLAYER MODE', this.width / 2, this.height / 2 - 60);
+
+            // Standard instructions
+            ctx.fillStyle = '#ecf0f1';
+            ctx.font = '18px Arial';
+            ctx.fillText('Arrow Keys to Move, Space to Shoot', this.width / 2, this.height / 2 - 10);
+            ctx.fillText('Collect All Coins to Complete Level!', this.width / 2, this.height / 2 + 20);
+            ctx.fillText('Players alternate when hit', this.width / 2, this.height / 2 + 50);
+        } else {
+            // Single player
+            ctx.fillStyle = '#e74c3c';
+            ctx.font = '24px Arial';
+            ctx.fillText('Survive the Aliens!', this.width / 2, this.height / 2 - 40);
+
+            ctx.fillStyle = '#ecf0f1';
+            ctx.font = '18px Arial';
+            ctx.fillText('Arrow Keys to Move', this.width / 2, this.height / 2 + 10);
+            ctx.fillText('Space to Shoot', this.width / 2, this.height / 2 + 35);
+            ctx.fillText('Collect All Coins to Complete Level!', this.width / 2, this.height / 2 + 60);
         }
-
-        // Subtitle
-        ctx.fillStyle = '#e74c3c';
-        ctx.font = '24px Arial';
-        ctx.fillText('Survive the Aliens!', this.width / 2, this.height / 2);
-
-        // Instructions
-        ctx.fillStyle = '#ecf0f1';
-        ctx.font = '18px Arial';
-        ctx.fillText('Arrow Keys to Move', this.width / 2, this.height / 2 + 40);
-        ctx.fillText('Space to Shoot', this.width / 2, this.height / 2 + 65);
-        ctx.fillText('Collect All Coins to Complete Level!', this.width / 2, this.height / 2 + 90);
 
         // Start prompt
         ctx.fillStyle = '#2ecc71';
         ctx.font = 'bold 24px Arial';
         const blink = Math.floor(Date.now() / 500) % 2;
         if (blink) {
-            ctx.fillText('Press SPACE to Start', this.width / 2, this.height / 2 + 140);
+            ctx.fillText('Press SPACE to Start', this.width / 2, this.height / 2 + 110);
         }
     },
 
@@ -396,6 +420,130 @@ const Renderer = {
             star.className = 'star' + (i < currentStars ? ' filled' : '');
             star.textContent = i < currentStars ? '★' : '☆';
             starsDiv.appendChild(star);
+        }
+    },
+
+    // Versus mode HUD
+    updateVersusHUD(player1, player2, coins, level) {
+        const livesDiv = document.getElementById('lives');
+        livesDiv.innerHTML = '';
+
+        // Player 1 indicator and lives
+        const p1Indicator = document.createElement('span');
+        p1Indicator.style.color = '#3498db';
+        p1Indicator.style.fontWeight = 'bold';
+        p1Indicator.style.marginRight = '5px';
+        p1Indicator.textContent = 'P1:';
+        livesDiv.appendChild(p1Indicator);
+
+        for (let i = 0; i < 3; i++) {
+            const heart = document.createElement('span');
+            heart.innerHTML = '❤️';
+            heart.style.fontSize = '16px';
+            heart.style.opacity = i < player1.lives ? '1' : '0.3';
+            livesDiv.appendChild(heart);
+        }
+
+        // Spacer
+        const spacer = document.createElement('span');
+        spacer.innerHTML = ' | ';
+        spacer.style.margin = '0 10px';
+        livesDiv.appendChild(spacer);
+
+        // Player 2 indicator and lives
+        const p2Indicator = document.createElement('span');
+        p2Indicator.style.color = '#264d8a';
+        p2Indicator.style.fontWeight = 'bold';
+        p2Indicator.style.marginRight = '5px';
+        p2Indicator.textContent = 'P2:';
+        livesDiv.appendChild(p2Indicator);
+
+        for (let i = 0; i < 3; i++) {
+            const heart = document.createElement('span');
+            heart.innerHTML = '❤️';
+            heart.style.fontSize = '16px';
+            heart.style.opacity = i < player2.lives ? '1' : '0.3';
+            livesDiv.appendChild(heart);
+        }
+
+        // Update coins display to show per-player
+        const coinDiv = document.getElementById('coins');
+        if (coinDiv) {
+            coinDiv.innerHTML = `<span style="color:#3498db">P1: ${coins.getCoinsForPlayer(1)}</span> | <span style="color:#264d8a">P2: ${coins.getCoinsForPlayer(2)}</span>`;
+        } else {
+            document.getElementById('coinCount').textContent = coins.getCoinsForPlayer(1);
+            document.getElementById('totalCoins').textContent = coins.getCoinsForPlayer(2);
+        }
+
+        // Update level
+        document.getElementById('levelNum').textContent = level;
+
+        // Hide stars for versus mode (replace with coin counts)
+        const starsDiv = document.getElementById('stars');
+        starsDiv.innerHTML = `<span style="font-size:14px">Total: ${coins.collectedCoins}/${coins.totalCoins}</span>`;
+    },
+
+    // Versus round complete screen
+    drawVersusComplete(level, coins, versusStats, player1, player2) {
+        const ctx = this.ctx;
+
+        // Dark overlay
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+        ctx.fillRect(0, 0, this.width, this.height);
+
+        // Determine round winner
+        const p1Coins = coins.getCoinsForPlayer(1);
+        const p2Coins = coins.getCoinsForPlayer(2);
+        const winner = coins.getWinner();
+
+        // Title
+        ctx.font = 'bold 36px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#ffd700';
+        ctx.fillText(`LEVEL ${level} COMPLETE!`, this.width / 2, this.height / 2 - 100);
+
+        // Round results
+        ctx.font = 'bold 24px Arial';
+
+        // Player 1 coins
+        ctx.fillStyle = winner === 1 ? '#ffd700' : '#3498db';
+        ctx.fillText(`P1: ${p1Coins} coins`, this.width / 2 - 100, this.height / 2 - 40);
+        if (winner === 1) {
+            ctx.fillText('👑', this.width / 2 - 180, this.height / 2 - 40);
+        }
+
+        // Player 2 coins
+        ctx.fillStyle = winner === 2 ? '#ffd700' : '#264d8a';
+        ctx.fillText(`P2: ${p2Coins} coins`, this.width / 2 + 100, this.height / 2 - 40);
+        if (winner === 2) {
+            ctx.fillText('👑', this.width / 2 + 180, this.height / 2 - 40);
+        }
+
+        // Winner announcement
+        ctx.font = 'bold 32px Arial';
+        if (winner === 1) {
+            ctx.fillStyle = '#3498db';
+            ctx.fillText('PLAYER 1 WINS THE ROUND!', this.width / 2, this.height / 2 + 20);
+        } else if (winner === 2) {
+            ctx.fillStyle = '#264d8a';
+            ctx.fillText('PLAYER 2 WINS THE ROUND!', this.width / 2, this.height / 2 + 20);
+        } else {
+            ctx.fillStyle = '#2ecc71';
+            ctx.fillText('IT\'S A TIE!', this.width / 2, this.height / 2 + 20);
+        }
+
+        // Running totals
+        ctx.fillStyle = '#ecf0f1';
+        ctx.font = '18px Arial';
+        ctx.fillText(`Total Coins - P1: ${versusStats[1].totalCoins + p1Coins} | P2: ${versusStats[2].totalCoins + p2Coins}`, this.width / 2, this.height / 2 + 60);
+        ctx.fillText(`Round Wins - P1: ${versusStats[1].roundWins + (winner === 1 ? 1 : 0)} | P2: ${versusStats[2].roundWins + (winner === 2 ? 1 : 0)}`, this.width / 2, this.height / 2 + 85);
+
+        // Continue prompt
+        ctx.fillStyle = '#2ecc71';
+        ctx.font = 'bold 24px Arial';
+        const blink = Math.floor(Date.now() / 500) % 2;
+        if (blink) {
+            ctx.fillText('Press SPACE for Next Level', this.width / 2, this.height / 2 + 130);
         }
     }
 };

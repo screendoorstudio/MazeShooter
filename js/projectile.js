@@ -1,10 +1,19 @@
 // Projectile (Laser) Class
 class Projectile {
-    constructor(x, y, direction, isPlayerProjectile = true) {
+    // Laser colors per owner
+    static COLORS = {
+        1: '#00bfff',     // Player 1 - Blue
+        2: '#ff6b35',     // Player 2 - Orange
+        alien: '#9b59b6'  // Aliens - Purple
+    };
+
+    // ownerId: 1 = Player 1, 2 = Player 2, null = Alien
+    constructor(x, y, direction, ownerId = null) {
         this.x = x;
         this.y = y;
         this.direction = direction; // 'up', 'down', 'left', 'right'
-        this.isPlayerProjectile = isPlayerProjectile;
+        this.ownerId = ownerId; // null for aliens, 1 or 2 for players
+        this.isPlayerProjectile = ownerId !== null; // backwards compatibility
         this.speed = 400; // pixels per second
         this.radius = 4;
         this.length = 15;
@@ -58,13 +67,16 @@ class Projectile {
         ctx.save();
 
         // Color based on who fired it
-        if (this.isPlayerProjectile) {
-            ctx.fillStyle = '#00bfff'; // Blue for player
-            ctx.shadowColor = '#00bfff';
+        let color;
+        if (this.ownerId === 1) {
+            color = Projectile.COLORS[1]; // Blue for Player 1
+        } else if (this.ownerId === 2) {
+            color = Projectile.COLORS[2]; // Orange for Player 2
         } else {
-            ctx.fillStyle = '#9b59b6'; // Purple for aliens
-            ctx.shadowColor = '#9b59b6';
+            color = Projectile.COLORS.alien; // Purple for aliens
         }
+        ctx.fillStyle = color;
+        ctx.shadowColor = color;
         ctx.shadowBlur = 10;
 
         // Draw laser beam
@@ -112,6 +124,16 @@ const ProjectileManager = {
 
     getAlienProjectiles() {
         return this.projectiles.filter(p => !p.isPlayerProjectile && p.active);
+    },
+
+    // Get projectiles from a specific player
+    getProjectilesFromPlayer(playerId) {
+        return this.projectiles.filter(p => p.ownerId === playerId && p.active);
+    },
+
+    // Get projectiles that can hit a specific player (from other player or aliens)
+    getProjectilesTargeting(playerId) {
+        return this.projectiles.filter(p => p.active && p.ownerId !== playerId);
     },
 
     clear() {

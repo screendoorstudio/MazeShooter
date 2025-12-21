@@ -5,6 +5,7 @@ class Coin {
         this.y = y;
         this.radius = 10;
         this.collected = false;
+        this.collectedBy = null; // Track which player collected (for versus mode)
         this.bobOffset = Math.random() * Math.PI * 2; // Random start for bobbing animation
         this.sparkleAngle = 0;
     }
@@ -51,8 +52,9 @@ class Coin {
         ctx.restore();
     }
 
-    collect() {
+    collect(playerId = null) {
         this.collected = true;
+        this.collectedBy = playerId;
     }
 
     checkCollection(player) {
@@ -63,7 +65,7 @@ class Coin {
         const distance = Math.sqrt(dx * dx + dy * dy);
 
         if (distance < this.radius + player.radius) {
-            this.collect();
+            this.collect(player.playerId);
             return true;
         }
         return false;
@@ -75,11 +77,13 @@ const CoinManager = {
     coins: [],
     totalCoins: 0,
     collectedCoins: 0,
+    coinsPerPlayer: { 1: 0, 2: 0 }, // Track coins per player for versus mode
 
     init(maze, count = 20) {
         this.coins = [];
         this.collectedCoins = 0;
         this.totalCoins = count;
+        this.coinsPerPlayer = { 1: 0, 2: 0 };
 
         const pathCells = maze.getPathCells();
         const startPos = maze.getStartPosition();
@@ -120,6 +124,31 @@ const CoinManager = {
             coin.update(deltaTime);
             if (coin.checkCollection(player)) {
                 this.collectedCoins++;
+                if (player.playerId) {
+                    this.coinsPerPlayer[player.playerId]++;
+                    player.coinsCollected++;
+                }
+                Audio.play('coin');
+            }
+        });
+    },
+
+    // Update for versus mode with two players
+    updateVersus(deltaTime, player1, player2) {
+        this.coins.forEach(coin => {
+            coin.update(deltaTime);
+            // Check player 1
+            if (player1.alive && coin.checkCollection(player1)) {
+                this.collectedCoins++;
+                this.coinsPerPlayer[1]++;
+                player1.coinsCollected++;
+                Audio.play('coin');
+            }
+            // Check player 2
+            else if (player2.alive && coin.checkCollection(player2)) {
+                this.collectedCoins++;
+                this.coinsPerPlayer[2]++;
+                player2.coinsCollected++;
                 Audio.play('coin');
             }
         });
@@ -143,9 +172,25 @@ const CoinManager = {
         return this.totalCoins > 0 && this.collectedCoins >= this.totalCoins;
     },
 
+    // Get coins collected by a specific player
+    getCoinsForPlayer(playerId) {
+        return this.coinsPerPlayer[playerId] || 0;
+    },
+
+    // Get the winner (player with most coins) or null for tie
+    getWinner() {
+        if (this.coinsPerPlayer[1] > this.coinsPerPlayer[2]) {
+            return 1;
+        } else if (this.coinsPerPlayer[2] > this.coinsPerPlayer[1]) {
+            return 2;
+        }
+        return null; // Tie
+    },
+
     clear() {
         this.coins = [];
         this.collectedCoins = 0;
         this.totalCoins = 0;
+        this.coinsPerPlayer = { 1: 0, 2: 0 };
     }
 };

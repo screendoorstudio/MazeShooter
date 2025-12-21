@@ -13,6 +13,7 @@ class Alien {
         this.shootCooldown = 2 + Math.random() * 2; // Random initial cooldown
         this.shootCooldownTime = 2 + Math.random(); // Time between shots
         this.animationOffset = Math.random() * Math.PI * 2;
+        this.targetPlayerId = null; // For versus mode split targeting
     }
 
     update(deltaTime, maze, player) {
@@ -264,10 +265,12 @@ const AlienManager = {
     baseAlienCount: 3,
     aliensPerLevel: 2,
     speedMultiplier: 1,
+    players: [], // For versus mode
 
     init(maze, level, player) {
         this.aliens = [];
         this.spawnTimer = 0;
+        this.players = [player]; // Single player mode
 
         // Calculate aliens for this level
         const alienCount = this.baseAlienCount + (level - 1) * this.aliensPerLevel;
@@ -277,6 +280,26 @@ const AlienManager = {
         // Spawn initial aliens
         for (let i = 0; i < alienCount; i++) {
             this.spawnAlien(maze, player);
+        }
+    },
+
+    // Initialize for versus mode with split targeting
+    initVersus(maze, level, player1, player2) {
+        this.aliens = [];
+        this.spawnTimer = 0;
+        this.players = [player1, player2];
+
+        // Calculate aliens for this level
+        const alienCount = this.baseAlienCount + (level - 1) * this.aliensPerLevel;
+        this.maxAliens = alienCount + 5;
+        this.speedMultiplier = 1 + (level - 1) * 0.15;
+
+        // Spawn initial aliens with split targeting
+        for (let i = 0; i < alienCount; i++) {
+            // Alternate targeting between players
+            const targetPlayerId = (i % 2) + 1; // 1 or 2
+            const targetPlayer = targetPlayerId === 1 ? player1 : player2;
+            this.spawnAlienVersus(maze, player1, player2, targetPlayerId);
         }
     },
 
@@ -296,6 +319,28 @@ const AlienManager = {
         }
     },
 
+    // Spawn alien for versus mode with assigned target
+    spawnAlienVersus(maze, player1, player2, targetPlayerId) {
+        if (this.aliens.filter(a => a.alive).length >= this.maxAliens) return;
+
+        // Get random position far from both players
+        const minDistance = maze.cellSize * 4;
+        // Use the center point between players for distance check
+        const centerPoint = {
+            x: (player1.x + player2.x) / 2,
+            y: (player1.y + player2.y) / 2
+        };
+        const cell = maze.getRandomPathCell(centerPoint, minDistance);
+
+        if (cell) {
+            const isChaser = Math.random() < 0.5;
+            const alien = new Alien(cell.x, cell.y, isChaser);
+            alien.speed *= this.speedMultiplier;
+            alien.targetPlayerId = targetPlayerId;
+            this.aliens.push(alien);
+        }
+    },
+
     update(deltaTime, maze, player) {
         // Update spawn timer
         this.spawnTimer += deltaTime;
@@ -310,6 +355,49 @@ const AlienManager = {
         this.aliens.forEach(alien => alien.update(deltaTime, maze, player));
 
         // Check projectile hits
+        const playerProjectiles = ProjectileManager.getPlayerProjectiles();
+        this.aliens.forEach(alien => {
+            if (!alien.alive) return;
+
+            playerProjectiles.forEach(proj => {
+                if (proj.active && proj.hits(alien)) {
+                    alien.die();
+                    proj.active = false;
+                }
+            });
+        });
+    },
+
+    // Update for versus mode with two players
+    updateVersus(deltaTime, maze, player1, player2) {
+        // Update spawn timer
+        this.spawnTimer += deltaTime;
+
+        // Spawn new aliens periodically
+        if (this.spawnTimer >= this.spawnInterval) {
+            this.spawnTimer = 0;
+            // Alternate target for new spawns
+            const targetId = Math.random() < 0.5 ? 1 : 2;
+            this.spawnAlienVersus(maze, player1, player2, targetId);
+        }
+
+        // Update all aliens - each alien targets their assigned player
+        this.aliens.forEach(alien => {
+            if (!alien.alive) return;
+
+            // Determine which player to target
+            let targetPlayer;
+            if (alien.targetPlayerId === 1) {
+                targetPlayer = player1.alive ? player1 : player2;
+            } else {
+                targetPlayer = player2.alive ? player2 : player1;
+            }
+
+            // Update with target player
+            alien.update(deltaTime, maze, targetPlayer);
+        });
+
+        // Check projectile hits from both players
         const playerProjectiles = ProjectileManager.getPlayerProjectiles();
         this.aliens.forEach(alien => {
             if (!alien.alive) return;

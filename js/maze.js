@@ -109,6 +109,14 @@ class Maze {
         };
     }
 
+    // Player 2 start position (bottom-right, opposite corner from P1)
+    getPlayer2StartPosition() {
+        return {
+            x: (this.cols - 2.5) * this.cellSize,
+            y: (this.rows - 2.5) * this.cellSize
+        };
+    }
+
     getExitPosition() {
         return {
             x: (this.cols - 2) * this.cellSize,
