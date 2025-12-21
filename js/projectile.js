@@ -122,9 +122,16 @@ const ProjectileManager = {
         const playerProjectiles = this.projectiles.filter(p => p.active && p.isPlayerProjectile);
         const alienProjectiles = this.projectiles.filter(p => p.active && !p.isPlayerProjectile);
 
+        // Use larger collision radius since projectiles move fast and could pass through each other
+        const collisionRadius = 12; // More generous than the visual radius of 4
+
         for (const playerProj of playerProjectiles) {
             for (const alienProj of alienProjectiles) {
-                if (playerProj.hits(alienProj)) {
+                const dx = playerProj.x - alienProj.x;
+                const dy = playerProj.y - alienProj.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < collisionRadius * 2) {
                     // Both projectiles are destroyed
                     playerProj.active = false;
                     alienProj.active = false;
