@@ -6,28 +6,56 @@ A web-based maze shooter game built with HTML5 Canvas and vanilla JavaScript.
 
 ## Game Overview
 
-Navigate through randomly generated mazes, collect all coins while shooting aliens. The game features single-player and two-player alternating turn modes.
+Navigate through randomly generated mazes, collect coins while shooting aliens. The game features three modes:
+- **Single Player** - Collect all coins, survive as long as you can
+- **Two-Player Alternating** - Players take turns when hit, highest score wins
+- **Versus Mode** - Two players compete simultaneously for coins
 
 ### Controls
+
+#### Menu Controls
 | Key | Action |
 |-----|--------|
-| Arrow Keys | Move (up, down, left, right) |
-| Spacebar | Shoot laser / Start game / Continue |
-| R | Restart after game over |
 | 1 | Select single player mode |
-| 2 | Select two player mode |
+| 2 | Select two-player alternating mode |
+| 3 | Select versus mode |
+| Space | Start game / Continue |
+| R | Restart after game over |
 
-### Gameplay
-- **Objective:** Collect ALL coins in the maze to complete the level while avoiding/shooting aliens
-- **Lives:** 3 lives per player - lose a life when touched by an alien or hit by a purple laser
-- **Coins:** Collect all coins to advance; star rating based on coin percentage when level ends (always 3 stars now)
-- **Levels:** Each level has a new random maze with more aliens that move faster
-- **Two-Player Mode:** Players alternate turns when hit - highest combined score (level × 10 + stars) wins
+#### Gameplay Controls
+| Player | Movement | Shoot |
+|--------|----------|-------|
+| Player 1 | Arrow Keys | Right Shift (or Space in non-versus) |
+| Player 2 | WASD | Left Shift |
 
-### Star Rating
-- 0-33% coins = 1 star
-- 34-66% coins = 2 stars
-- 67-100% coins = 3 stars
+### Game Modes
+
+#### Single Player
+- Collect ALL coins to complete each level
+- 3 lives - lose a life when hit by alien or purple laser
+- Star rating based on coin percentage (always 3 stars since you must collect all)
+- Aliens increase in number and speed each level
+
+#### Two-Player Alternating
+- Players take turns on their own separate mazes
+- When hit, control switches to the other player
+- Each player has 3 lives independently
+- When a player loses all lives, they're eliminated
+- Winner determined by combined score (level × 10 + stars)
+
+#### Versus Mode (Simultaneous)
+- Both players on the same maze at the same time
+- **Objective:** Collect the most coins before all coins are gone
+- **Combat:** Players can shoot each other - 3 hits = lose a life
+- Each player has 3 lives; eliminated when out of lives
+- Half the aliens target Player 1, half target Player 2
+- Round winner is whoever collected more coins
+- Scores and round wins carry across levels
+
+### Visual Identification
+- **Player 1:** Olive green camouflage, blue lasers
+- **Player 2:** Navy blue camouflage, orange lasers
+- **Aliens:** Red, purple lasers
 
 ## Technical Architecture
 
@@ -38,15 +66,15 @@ MazeShooter/
 ├── css/
 │   └── style.css       # Game styling, HUD layout, dark theme
 ├── js/
-│   ├── game.js         # Main game loop, state management, game modes
+│   ├── game.js         # Main game loop, state management, all game modes
 │   ├── maze.js         # Maze generation (recursive backtracking algorithm)
-│   ├── player.js       # Player class with movement, shooting, corner assistance
-│   ├── alien.js        # Alien class with chaser/wanderer AI, AlienManager
-│   ├── projectile.js   # Laser projectiles, ProjectileManager
-│   ├── coin.js         # Coin class, CoinManager with star calculation
+│   ├── player.js       # Player class with movement, shooting, color schemes
+│   ├── alien.js        # Alien class with chaser/wanderer AI, split targeting
+│   ├── projectile.js   # Laser projectiles with owner tracking (P1/P2/alien)
+│   ├── coin.js         # Coin class, per-player collection tracking
 │   ├── collision.js    # Collision detection utilities
-│   ├── input.js        # Keyboard input handler
-│   ├── renderer.js     # Canvas rendering, all screen drawing functions
+│   ├── input.js        # Keyboard input handler (arrows, WASD, shift keys)
+│   ├── renderer.js     # Canvas rendering, HUD, all screen overlays
 │   └── audio.js        # Web Audio API sound effects
 ├── ideas-images/
 │   └── mazeimage.png   # Reference maze image used for design
@@ -61,22 +89,45 @@ MazeShooter/
 - Grid size: 21×21 cells (odd numbers required for algorithm)
 - Creates passages by "carving" through walls
 - Guarantees solvable maze with single solution path
-- Start position: top-left area
-- Exit position: bottom-right area
+- P1 start position: top-left area
+- P2 start position: bottom-right area (versus mode)
 
-#### Player Movement (`player.js`)
+#### Player System (`player.js`)
 - Smooth pixel-by-pixel movement (not grid-snapping)
-- **Corner assistance:** When player is blocked at a corner but close to a corridor opening, automatically nudges them toward the opening for smoother navigation
-- Invincibility frames after taking damage (2 seconds)
+- **Corner assistance:** When player is blocked at a corner but close to a corridor opening, automatically nudges them toward the opening
+- Invincibility frames after taking damage (2 seconds normal, 0.5 seconds between hits in versus)
 - Direction tracked for shooting (fires in facing direction)
+- **Color schemes:** Static property defines olive green (P1) and navy blue (P2) palettes
+- **Versus hit system:** 3 hits to kill, tracked via `hitsTaken` property
+- Per-player coin tracking via `coinsCollected` property
+
+#### Input System (`input.js`)
+- Tracks continuous key state and single-press events separately
+- **Player 1:** Arrow keys for movement, Right Shift to shoot
+- **Player 2:** WASD for movement, Left Shift to shoot
+- Space bar works for shooting in non-versus modes (backwards compatibility)
+- `getMovementVectorForPlayer(playerId)` returns direction based on player's keys
+- `isShootPressed(playerId)` checks the correct shift key per player
+
+#### Projectile System (`projectile.js`)
+- `ownerId` property: `1` (P1), `2` (P2), or `null` (alien)
+- Color based on owner: Blue (#00bfff) for P1, Orange (#ff6b35) for P2, Purple (#9b59b6) for aliens
+- `getProjectilesTargeting(playerId)` returns projectiles that can hit a specific player
 
 #### Alien AI (`alien.js`)
 - Two behavior types (50/50 split):
-  - **Chasers:** Pathfind toward player, choosing directions that reduce distance
-  - **Wanderers:** Move randomly, change direction at intervals or when hitting walls
-- Aliens shoot purple lasers toward player when within range (300px)
-- Spawn at random maze locations with minimum distance from player
+  - **Chasers:** Pathfind toward target player
+  - **Wanderers:** Move randomly, change direction at intervals
+- **Split targeting (versus mode):** Each alien assigned to target P1 or P2
+  - Falls back to other player if assigned target is dead
+- Aliens shoot toward their target player when within range (300px)
 - Per level: starts with 3 aliens, +2 each level, speed increases 15% per level
+
+#### Coin System (`coin.js`)
+- `coinsPerPlayer` object tracks coins collected by each player
+- `collectedBy` property on each coin records who picked it up
+- `getWinner()` returns player with most coins (or null for tie)
+- `updateVersus()` method checks collection for both players
 
 #### Collision Detection (`collision.js`)
 - Circle-circle collision for entity interactions
@@ -89,13 +140,14 @@ MazeShooter/
 - Sounds: shoot, coin pickup, player hit, alien death, alien shoot, level complete, game over
 
 #### Game States (`game.js`)
-- `modeSelect` - Choose 1 or 2 players
-- `start` - Instructions screen
+- `modeSelect` - Choose mode (1, 2, or 3)
+- `start` - Instructions screen (varies by mode)
 - `playing` - Active gameplay
-- `levelComplete` - Show stars earned
-- `switchPlayer` - Two-player mode transition
+- `levelComplete` - Show stars earned (non-versus)
+- `versusComplete` - Show round winner and coin totals
+- `switchPlayer` - Two-player alternating mode transition
 - `gameOver` - Single player end
-- `finalResults` - Two-player comparison and winner
+- `finalResults` - Two-player alternating comparison
 
 ## Development History
 
@@ -118,22 +170,23 @@ MazeShooter/
 
 ### Session 2 (Gameplay Changes)
 14. Changed level completion: collect ALL coins instead of reaching exit (removed exit door)
-15. Two-player mode: players now alternate turns when hit (not when game over)
+15. Two-player alternating mode: players now alternate turns when hit (not just at game over)
+16. Each player maintains their own independent maze/game state
+
+### Session 3 (Versus Mode)
+17. Added **simultaneous two-player Versus Mode** (Press 3)
+18. New controls: WASD for P2 movement, Shift keys for shooting
+19. Player color schemes: olive green (P1) vs navy blue (P2)
+20. Projectile ownership tracking with distinct laser colors
+21. Per-player coin collection tracking
+22. Player-vs-player combat: 3 hits to kill
+23. Split alien targeting: half chase P1, half chase P2
+24. Versus-specific HUD showing both players' lives and coins
+25. Round completion screen with winner and running totals
 
 ## Future Development
 
-### Planned: Simultaneous Two-Player Mode
-A mode where two players play at the same time on the same maze, competing or cooperating.
-
-**Considerations for implementation:**
-- Second set of controls (WASD + different shoot key?)
-- Different player colors/sprites to distinguish players
-- Decide: cooperative (shared lives?) or competitive (race to exit?)
-- Camera: will need to handle if players separate in a scrolling view, or keep maze small enough to fit both
-- Friendly fire on/off option?
-- Separate coin tracking or shared?
-
-### Other Potential Enhancements
+### Potential Enhancements
 - Power-ups (speed boost, shield, rapid fire, freeze aliens)
 - Different alien types with unique behaviors
 - Boss battles every N levels
@@ -141,6 +194,8 @@ A mode where two players play at the same time on the same maze, competing or co
 - Mobile touch controls
 - Different maze themes/skins
 - Difficulty settings
+- Cooperative mode (shared objective, shared lives?)
+- Tournament/bracket mode for versus
 
 ## Running Locally
 
