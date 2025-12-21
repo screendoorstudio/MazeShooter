@@ -192,5 +192,12 @@ const CoinManager = {
         this.collectedCoins = 0;
         this.totalCoins = 0;
         this.coinsPerPlayer = { 1: 0, 2: 0 };
+    },
+
+    // Spawn a coin at a specific location (e.g., when alien dies)
+    spawnCoin(x, y) {
+        const coin = new Coin(x, y);
+        this.coins.push(coin);
+        this.totalCoins++;
     }
 };

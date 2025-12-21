@@ -397,8 +397,20 @@ const AlienManager = {
             alien.update(deltaTime, maze, targetPlayer);
         });
 
-        // In versus mode, aliens cannot be killed - they persist throughout the game
-        // Player projectiles pass through aliens (no hit detection)
+        // Check player projectile hits on aliens - one hit kills
+        const playerProjectiles = ProjectileManager.getPlayerProjectiles();
+        this.aliens.forEach(alien => {
+            if (!alien.alive) return;
+
+            playerProjectiles.forEach(proj => {
+                if (proj.active && proj.hits(alien)) {
+                    // Spawn coin at alien's location before killing it
+                    CoinManager.spawnCoin(alien.x, alien.y);
+                    alien.die();
+                    proj.active = false;
+                }
+            });
+        });
     },
 
     draw(ctx, time) {

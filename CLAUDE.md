@@ -47,6 +47,7 @@ Navigate through randomly generated mazes, collect coins while shooting aliens. 
 - Both players on the same maze at the same time
 - **Objective:** Collect the most coins before all coins are gone
 - **Player-vs-Player Combat:** 2 hits = lose a life
+- **Killing Aliens:** One hit from any player kills an alien, spawning a coin
 - **Alien Combat:** Alien hit or projectile = instant life loss, alien is eliminated
 - **Laser Defense:** Player lasers destroy alien lasers on contact
 - Each player has 3 lives for the entire game (not per level)
@@ -200,6 +201,8 @@ MazeShooter/
 30. **Player-vs-player: 2 hits to lose a life** (changed from 3)
 31. **Bonus life at 50 coins** - earn free life every 50 coins collected (green flash + sound)
 32. Added `takeInstantDeath()` method for alien damage, `getCollidingAlien()` for alien elimination
+33. **Players can kill aliens** - one hit kills, spawns a coin at alien's location
+34. Added `CoinManager.spawnCoin(x, y)` for dynamic coin spawning
 
 ## Future Development
 
