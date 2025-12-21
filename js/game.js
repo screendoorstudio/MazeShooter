@@ -398,8 +398,8 @@ const Game = {
     startVersusGame() {
         this.level = 1;
         this.versusStats = {
-            1: { totalCoins: 0, roundWins: 0 },
-            2: { totalCoins: 0, roundWins: 0 }
+            1: { totalCoins: 0, roundWins: 0, nextBonusLifeAt: 50 },
+            2: { totalCoins: 0, roundWins: 0, nextBonusLifeAt: 50 }
         };
 
         this.startVersusLevel();
@@ -470,14 +470,25 @@ const Game = {
             this.player2.update(deltaTime, this.maze);
         }
 
+        // Track coins before update
+        const p1CoinsBefore = CoinManager.getCoinsForPlayer(1);
+        const p2CoinsBefore = CoinManager.getCoinsForPlayer(2);
+
         // Update coins for both players
         CoinManager.updateVersus(deltaTime, this.player, this.player2);
+
+        // Check for new coins collected and bonus lives
+        this.checkVersusBonusLife(this.player, p1CoinsBefore);
+        this.checkVersusBonusLife(this.player2, p2CoinsBefore);
 
         // Update aliens
         AlienManager.updateVersus(deltaTime, this.maze, this.player, this.player2);
 
         // Update projectiles
         ProjectileManager.update(deltaTime, this.maze);
+
+        // Check projectile-vs-projectile collisions (player lasers destroy alien lasers)
+        ProjectileManager.checkProjectileCollisions();
 
         // Check projectile hits on both players
         this.checkVersusProjectileHits();
@@ -505,7 +516,12 @@ const Game = {
             if (this.player.alive && !this.player.invincible && proj.ownerId !== 1) {
                 if (proj.hits(this.player)) {
                     proj.active = false;
-                    this.handleVersusPlayerHit(this.player);
+                    // Alien projectile = instant life loss + alien eliminated
+                    const isAlienProjectile = proj.ownerId === null;
+                    if (isAlienProjectile && proj.sourceAlien && proj.sourceAlien.alive) {
+                        proj.sourceAlien.die();
+                    }
+                    this.handleVersusPlayerHit(this.player, isAlienProjectile);
                     continue;
                 }
             }
@@ -514,7 +530,12 @@ const Game = {
             if (this.player2.alive && !this.player2.invincible && proj.ownerId !== 2) {
                 if (proj.hits(this.player2)) {
                     proj.active = false;
-                    this.handleVersusPlayerHit(this.player2);
+                    // Alien projectile = instant life loss + alien eliminated
+                    const isAlienProjectile = proj.ownerId === null;
+                    if (isAlienProjectile && proj.sourceAlien && proj.sourceAlien.alive) {
+                        proj.sourceAlien.die();
+                    }
+                    this.handleVersusPlayerHit(this.player2, isAlienProjectile);
                 }
             }
         }
@@ -523,24 +544,36 @@ const Game = {
     checkVersusAlienCollisions() {
         // Check player 1
         if (this.player.alive && !this.player.invincible) {
-            if (AlienManager.checkPlayerCollision(this.player)) {
-                this.handleVersusPlayerHit(this.player);
+            const collidingAlien = AlienManager.getCollidingAlien(this.player);
+            if (collidingAlien) {
+                // Alien collision = instant life loss, alien is eliminated
+                collidingAlien.die();
+                this.handleVersusPlayerHit(this.player, true); // true = alien hit
             }
         }
 
         // Check player 2
         if (this.player2.alive && !this.player2.invincible) {
-            if (AlienManager.checkPlayerCollision(this.player2)) {
-                this.handleVersusPlayerHit(this.player2);
+            const collidingAlien = AlienManager.getCollidingAlien(this.player2);
+            if (collidingAlien) {
+                // Alien collision = instant life loss, alien is eliminated
+                collidingAlien.die();
+                this.handleVersusPlayerHit(this.player2, true); // true = alien hit
             }
         }
     },
 
-    handleVersusPlayerHit(player) {
+    handleVersusPlayerHit(player, isAlienHit = false) {
         Renderer.triggerFlash('rgba(255, 0, 0, 0.4)');
 
-        // Use versus hit system (3 hits = death)
-        const died = player.takeVersusHit();
+        let died;
+        if (isAlienHit) {
+            // Alien hit = instant life loss
+            died = player.takeInstantDeath();
+        } else {
+            // Player-vs-player hit = 2 hits to lose a life
+            died = player.takeVersusHit();
+        }
 
         if (died && player.lives > 0) {
             // Player died but has lives left - respawn
@@ -557,6 +590,25 @@ const Game = {
     completeVersusLevel() {
         this.state = 'versusComplete';
         Audio.play('levelComplete');
+    },
+
+    // Check if player earned a bonus life (every 50 coins)
+    checkVersusBonusLife(player, coinsBefore) {
+        const coinsNow = CoinManager.getCoinsForPlayer(player.playerId);
+        if (coinsNow === coinsBefore) return; // No new coins
+
+        // Calculate total coins (previous levels + current level)
+        const stats = this.versusStats[player.playerId];
+        const totalCoins = stats.totalCoins + coinsNow;
+
+        // Check if we've reached the next bonus life threshold
+        if (totalCoins >= stats.nextBonusLifeAt) {
+            player.lives++;
+            stats.nextBonusLifeAt += 50; // Next bonus at another 50 coins
+            // Visual/audio feedback for bonus life
+            Renderer.triggerFlash('rgba(0, 255, 0, 0.4)'); // Green flash for bonus life
+            Audio.play('levelComplete'); // Reuse level complete sound
+        }
     },
 
     render() {

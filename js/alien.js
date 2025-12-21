@@ -165,7 +165,7 @@ class Alien {
             case 'right': spawnX += offset; break;
         }
 
-        const projectile = new Projectile(spawnX, spawnY, shootDir, false);
+        const projectile = new Projectile(spawnX, spawnY, shootDir, null, this);
         ProjectileManager.add(projectile);
 
         this.shootCooldown = this.shootCooldownTime;
@@ -412,6 +412,16 @@ const AlienManager = {
             }
         }
         return false;
+    },
+
+    // Returns the alien that is colliding with the player (for elimination)
+    getCollidingAlien(player) {
+        for (const alien of this.aliens) {
+            if (alien.hitsPlayer(player)) {
+                return alien;
+            }
+        }
+        return null;
     },
 
     clear() {

@@ -266,7 +266,7 @@ class Player {
         this.coinsCollected = 0;
     }
 
-    // Versus mode: Take a hit (3 hits = death)
+    // Versus mode: Take a hit from another player (2 hits = death)
     // Returns true if player died from this hit
     takeVersusHit() {
         if (this.invincible || !this.alive) return false;
@@ -274,7 +274,7 @@ class Player {
         this.hitsTaken++;
         Audio.play('playerHit');
 
-        if (this.hitsTaken >= 3) {
+        if (this.hitsTaken >= 2) {
             // Player is killed - lose a life
             this.hitsTaken = 0;
             this.lives--;
@@ -292,6 +292,24 @@ class Player {
         this.invincible = true;
         this.invincibleTime = 0.5; // Short invincibility after hit
         return false;
+    }
+
+    // Versus mode: Instant death from alien hit or collision
+    // Returns true always (since it's instant death)
+    takeInstantDeath() {
+        if (this.invincible || !this.alive) return false;
+
+        Audio.play('playerHit');
+        this.hitsTaken = 0;
+        this.lives--;
+
+        if (this.lives <= 0) {
+            this.alive = false;
+            return true; // Player eliminated
+        }
+
+        // Died but has lives left
+        return true;
     }
 
     // Reset hits (called on respawn)

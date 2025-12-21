@@ -8,12 +8,14 @@ class Projectile {
     };
 
     // ownerId: 1 = Player 1, 2 = Player 2, null = Alien
-    constructor(x, y, direction, ownerId = null) {
+    // sourceAlien: reference to alien that fired this projectile (for elimination on hit)
+    constructor(x, y, direction, ownerId = null, sourceAlien = null) {
         this.x = x;
         this.y = y;
         this.direction = direction; // 'up', 'down', 'left', 'right'
         this.ownerId = ownerId; // null for aliens, 1 or 2 for players
         this.isPlayerProjectile = ownerId !== null; // backwards compatibility
+        this.sourceAlien = sourceAlien; // Reference to alien that fired (for elimination)
         this.speed = 400; // pixels per second
         this.radius = 4;
         this.length = 15;
@@ -112,6 +114,23 @@ const ProjectileManager = {
         this.projectiles.forEach(p => p.update(deltaTime, maze));
         // Remove inactive projectiles
         this.projectiles = this.projectiles.filter(p => p.active);
+    },
+
+    // Check for collisions between player and alien projectiles
+    // Player lasers destroy alien lasers on contact
+    checkProjectileCollisions() {
+        const playerProjectiles = this.projectiles.filter(p => p.active && p.isPlayerProjectile);
+        const alienProjectiles = this.projectiles.filter(p => p.active && !p.isPlayerProjectile);
+
+        for (const playerProj of playerProjectiles) {
+            for (const alienProj of alienProjectiles) {
+                if (playerProj.hits(alienProj)) {
+                    // Both projectiles are destroyed
+                    playerProj.active = false;
+                    alienProj.active = false;
+                }
+            }
+        }
     },
 
     draw(ctx) {

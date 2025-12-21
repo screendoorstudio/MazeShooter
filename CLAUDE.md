@@ -46,11 +46,13 @@ Navigate through randomly generated mazes, collect coins while shooting aliens. 
 #### Versus Mode (Simultaneous)
 - Both players on the same maze at the same time
 - **Objective:** Collect the most coins before all coins are gone
-- **Combat:** Players can shoot each other - 3 hits = lose a life
+- **Player-vs-Player Combat:** 2 hits = lose a life
+- **Alien Combat:** Alien hit or projectile = instant life loss, alien is eliminated
+- **Laser Defense:** Player lasers destroy alien lasers on contact
 - Each player has 3 lives for the entire game (not per level)
+- **Bonus Life:** Earn a free life every 50 coins collected
 - Out of lives = eliminated from the game
 - Half the aliens target Player 1, half target Player 2
-- **Aliens cannot be killed** - they persist throughout the game
 - Round winner is whoever collected more coins
 - Scores and round wins carry across levels
 
@@ -100,7 +102,8 @@ MazeShooter/
 - Invincibility frames after taking damage (2 seconds normal, 0.5 seconds between hits in versus)
 - Direction tracked for shooting (fires in facing direction)
 - **Color schemes:** Static property defines olive green (P1) and navy blue (P2) palettes
-- **Versus hit system:** 3 hits to kill, tracked via `hitsTaken` property
+- **Versus hit system:** 2 hits from other player = lose a life; alien hit = instant life loss
+- `takeVersusHit()` for player-vs-player, `takeInstantDeath()` for alien damage
 - Per-player coin tracking via `coinsCollected` property
 
 #### Input System (`input.js`)
@@ -115,6 +118,7 @@ MazeShooter/
 - `ownerId` property: `1` (P1), `2` (P2), or `null` (alien)
 - Color based on owner: Blue (#00bfff) for P1, Orange (#ff6b35) for P2, Purple (#9b59b6) for aliens
 - `getProjectilesTargeting(playerId)` returns projectiles that can hit a specific player
+- `checkProjectileCollisions()` handles player lasers destroying alien lasers
 
 #### Alien AI (`alien.js`)
 - Two behavior types (50/50 split):
@@ -124,7 +128,8 @@ MazeShooter/
   - Falls back to other player if assigned target is dead
 - Aliens shoot toward their target player when within range (300px)
 - Per level: starts with 3 aliens, +2 each level, speed increases 15% per level
-- **Versus mode:** Aliens cannot be killed by players - they persist all game
+- **Versus mode:** Aliens are eliminated when they hit a player (collision or projectile)
+- `getCollidingAlien(player)` returns alien for elimination on collision
 
 #### Coin System (`coin.js`)
 - `coinsPerPlayer` object tracks coins collected by each player
@@ -188,6 +193,13 @@ MazeShooter/
 25. Round completion screen with winner and running totals
 26. **Bug fix:** Lives now persist across levels (3 lives per game, not per level)
 27. **Bug fix:** Aliens persist in versus mode (cannot be killed by player projectiles)
+
+### Session 4 (Combat Overhaul)
+28. **Player lasers destroy alien lasers** - projectile-vs-projectile collision detection
+29. **Alien hit = instant life + alien eliminated** - aliens die when they damage a player
+30. **Player-vs-player: 2 hits to lose a life** (changed from 3)
+31. **Bonus life at 50 coins** - earn free life every 50 coins collected (green flash + sound)
+32. Added `takeInstantDeath()` method for alien damage, `getCollidingAlien()` for alien elimination
 
 ## Future Development
 
