@@ -10,8 +10,8 @@ class Alien {
         this.direction = ['up', 'down', 'left', 'right'][Math.floor(Math.random() * 4)];
         this.directionChangeTimer = 0;
         this.directionChangeInterval = 0.5 + Math.random() * 1; // Random interval for wanderers
-        this.shootCooldown = 2 + Math.random() * 2; // Random initial cooldown
-        this.shootCooldownTime = 2 + Math.random(); // Time between shots
+        this.shootCooldown = 1 + Math.random() * 1.5; // Random initial cooldown
+        this.shootCooldownTime = 1.5 + Math.random() * 0.5; // Time between shots (faster)
         this.animationOffset = Math.random() * Math.PI * 2;
         this.targetPlayerId = null; // For versus mode split targeting
     }
@@ -143,7 +143,7 @@ class Alien {
         const distance = Math.sqrt(dx * dx + dy * dy);
 
         // Only shoot if player is within range
-        if (distance > 300) return;
+        if (distance > 400) return;
 
         // Determine shooting direction (4-directional)
         let shootDir;
@@ -260,10 +260,10 @@ class Alien {
 const AlienManager = {
     aliens: [],
     spawnTimer: 0,
-    spawnInterval: 5, // seconds between spawns
-    maxAliens: 10,
-    baseAlienCount: 3,
-    aliensPerLevel: 2,
+    spawnInterval: 4, // seconds between spawns
+    maxAliens: 20,
+    baseAlienCount: 6,
+    aliensPerLevel: 3,
     speedMultiplier: 1,
     players: [], // For versus mode
 
