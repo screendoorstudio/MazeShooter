@@ -411,8 +411,12 @@ const Game = {
         // Generate new maze
         this.maze = new Maze(this.MAZE_COLS, this.MAZE_ROWS, this.cellSize);
 
-        // Initialize Player 1 at top-left
-        const start1 = this.maze.getStartPosition();
+        // Get random spawn positions for both players
+        const start1 = this.maze.getRandomPathCell();
+        // Player 2 spawns at least 150px away from Player 1
+        const start2 = this.maze.getRandomPathCell(start1, 150);
+
+        // Initialize Player 1 at random position
         if (!this.player) {
             this.player = new Player(start1.x, start1.y, 1);
         } else {
@@ -421,8 +425,7 @@ const Game = {
             this.player.coinsCollected = 0;
         }
 
-        // Initialize Player 2 at bottom-right
-        const start2 = this.maze.getPlayer2StartPosition();
+        // Initialize Player 2 at random position (away from P1)
         if (!this.player2) {
             this.player2 = new Player(start2.x, start2.y, 2);
         } else {
