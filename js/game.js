@@ -14,10 +14,10 @@ const Game = {
     twoPlayerMode: false,
     currentPlayer: 1, // 1 or 2
 
-    // Player stats
+    // Player stats (savedState stores maze, coins, aliens when switching)
     playerStats: {
-        1: { level: 1, totalStars: 0, lives: 3, finished: false },
-        2: { level: 1, totalStars: 0, lives: 3, finished: false }
+        1: { level: 1, totalStars: 0, lives: 3, finished: false, savedState: null },
+        2: { level: 1, totalStars: 0, lives: 3, finished: false, savedState: null }
     },
 
     level: 1,
@@ -60,8 +60,8 @@ const Game = {
     startGame() {
         this.currentPlayer = 1;
         this.playerStats = {
-            1: { level: 1, totalStars: 0, lives: 3, finished: false },
-            2: { level: 1, totalStars: 0, lives: 3, finished: false }
+            1: { level: 1, totalStars: 0, lives: 3, finished: false, savedState: null },
+            2: { level: 1, totalStars: 0, lives: 3, finished: false, savedState: null }
         };
 
         this.level = 1;
@@ -100,6 +100,57 @@ const Game = {
         this.gameTime = 0;
     },
 
+    // Save current game state for a player (used in two-player mode)
+    saveGameState(playerNum) {
+        this.playerStats[playerNum].savedState = {
+            maze: this.maze,
+            coins: CoinManager.coins.map(c => ({ ...c })), // Clone coin states
+            collectedCoins: CoinManager.collectedCoins,
+            totalCoins: CoinManager.totalCoins,
+            aliens: AlienManager.aliens.map(a => ({ ...a })), // Clone alien states
+            level: this.level,
+            totalStars: this.totalStars,
+            gameTime: this.gameTime
+        };
+    },
+
+    // Load saved game state for a player (used in two-player mode)
+    loadGameState(playerNum) {
+        const saved = this.playerStats[playerNum].savedState;
+        if (!saved) return false;
+
+        this.maze = saved.maze;
+        this.level = saved.level;
+        this.totalStars = saved.totalStars;
+        this.gameTime = saved.gameTime;
+
+        // Restore coins
+        CoinManager.coins = saved.coins.map(c => {
+            const coin = new Coin(c.x, c.y);
+            coin.collected = c.collected;
+            coin.bobOffset = c.bobOffset;
+            coin.sparkleAngle = c.sparkleAngle;
+            return coin;
+        });
+        CoinManager.collectedCoins = saved.collectedCoins;
+        CoinManager.totalCoins = saved.totalCoins;
+
+        // Restore aliens
+        AlienManager.aliens = saved.aliens.map(a => {
+            const alien = new Alien(a.x, a.y, a.isChaser);
+            alien.direction = a.direction;
+            alien.speed = a.speed;
+            alien.shootCooldown = a.shootCooldown;
+            alien.directionTimer = a.directionTimer;
+            return alien;
+        });
+
+        // Clear projectiles
+        ProjectileManager.clear();
+
+        return true;
+    },
+
     nextLevel() {
         // Add stars from completed level
         const stars = CoinManager.getStars();
@@ -108,6 +159,10 @@ const Game = {
 
         this.level++;
         this.playerStats[this.currentPlayer].level = this.level;
+
+        // Clear saved state since we're starting a fresh level
+        this.playerStats[this.currentPlayer].savedState = null;
+
         this.startLevel();
         this.state = 'playing';
     },
@@ -129,8 +184,26 @@ const Game = {
     },
 
     switchToNextPlayer() {
+        const leavingPlayer = this.currentPlayer;
         const nextPlayer = this.currentPlayer === 1 ? 2 : 1;
+
+        // Save current player's game state (only if they're not finished)
+        if (!this.playerStats[leavingPlayer].finished) {
+            this.saveGameState(leavingPlayer);
+        }
+
+        // Switch to next player
         this.currentPlayer = nextPlayer;
+
+        // Load next player's saved state, or start fresh if none exists
+        if (this.playerStats[nextPlayer].savedState) {
+            this.loadGameState(nextPlayer);
+        } else {
+            // First time for this player - start fresh on level 1
+            this.level = this.playerStats[nextPlayer].level;
+            this.totalStars = this.playerStats[nextPlayer].totalStars;
+            this.startLevel();
+        }
 
         // Sync the player object's lives with the new current player's lives
         this.player.lives = this.playerStats[this.currentPlayer].lives;
