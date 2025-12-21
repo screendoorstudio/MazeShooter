@@ -46,13 +46,15 @@ Navigate through randomly generated mazes, collect coins while shooting aliens. 
 #### Versus Mode (Simultaneous)
 - Both players on the same maze at the same time
 - **Objective:** Collect the most coins before all coins are gone
+- **Random Spawns:** Both players spawn at random locations each level
+- **Random Respawns:** After losing a life, respawn at random location (150px from other player)
 - **Player-vs-Player Combat:** 2 hits = lose a life
 - **Killing Aliens:** One hit from any player kills an alien, spawning a coin
 - **Alien Combat:** Alien hit or projectile = instant life loss, alien is eliminated
 - **Laser Defense:** Player lasers destroy alien lasers on contact
 - Each player has 3 lives for the entire game (not per level)
 - **Bonus Life:** Earn a free life every 50 coins collected
-- Out of lives = eliminated from the game
+- **Game Over:** When either player loses all lives, the game ends immediately
 - Half the aliens target Player 1, half target Player 2
 - Round winner is whoever collected more coins
 - Scores and round wins carry across levels
@@ -94,8 +96,7 @@ MazeShooter/
 - Grid size: 21×21 cells (odd numbers required for algorithm)
 - Creates passages by "carving" through walls
 - Guarantees solvable maze with single solution path
-- P1 start position: top-left area
-- P2 start position: bottom-right area (versus mode)
+- `getRandomPathCell()` provides random spawn locations for versus mode
 
 #### Player System (`player.js`)
 - Smooth pixel-by-pixel movement (not grid-snapping)
@@ -127,9 +128,11 @@ MazeShooter/
   - **Wanderers:** Move randomly, change direction at intervals
 - **Split targeting (versus mode):** Each alien assigned to target P1 or P2
   - Falls back to other player if assigned target is dead
-- Aliens shoot toward their target player when within range (300px)
-- Per level: starts with 3 aliens, +2 each level, speed increases 15% per level
-- **Versus mode:** Aliens are eliminated when they hit a player (collision or projectile)
+- Aliens shoot toward their target player when within range (400px)
+- Shoot cooldown: 1.5-2 seconds between shots
+- Per level: starts with 6 aliens, +3 each level, max 20 aliens, speed increases 15% per level
+- New aliens spawn every 4 seconds
+- **Versus mode:** Aliens drop a coin when killed
 - `getCollidingAlien(player)` returns alien for elimination on collision
 
 #### Coin System (`coin.js`)
@@ -137,6 +140,7 @@ MazeShooter/
 - `collectedBy` property on each coin records who picked it up
 - `getWinner()` returns player with most coins (or null for tie)
 - `updateVersus()` method checks collection for both players
+- `spawnCoin(x, y)` dynamically spawns coins (used when aliens die)
 
 #### Collision Detection (`collision.js`)
 - Circle-circle collision for entity interactions
@@ -203,6 +207,11 @@ MazeShooter/
 32. Added `takeInstantDeath()` method for alien damage, `getCollidingAlien()` for alien elimination
 33. **Players can kill aliens** - one hit kills, spawns a coin at alien's location
 34. Added `CoinManager.spawnCoin(x, y)` for dynamic coin spawning
+35. **More aliens:** 6 base (was 3), +3 per level (was +2), max 20 (was 10)
+36. **Faster alien shooting:** 1.5-2s cooldown (was 2-4s), 400px range (was 300px)
+37. **Random spawn positions** - both players spawn randomly each level
+38. **Random respawn** - after losing a life, respawn at random location (150px from other player)
+39. **Game over on elimination** - game ends when either player loses all lives
 
 ## Future Development
 
