@@ -47,8 +47,10 @@ Navigate through randomly generated mazes, collect coins while shooting aliens. 
 - Both players on the same maze at the same time
 - **Objective:** Collect the most coins before all coins are gone
 - **Combat:** Players can shoot each other - 3 hits = lose a life
-- Each player has 3 lives; eliminated when out of lives
+- Each player has 3 lives for the entire game (not per level)
+- Out of lives = eliminated from the game
 - Half the aliens target Player 1, half target Player 2
+- **Aliens cannot be killed** - they persist throughout the game
 - Round winner is whoever collected more coins
 - Scores and round wins carry across levels
 
@@ -122,6 +124,7 @@ MazeShooter/
   - Falls back to other player if assigned target is dead
 - Aliens shoot toward their target player when within range (300px)
 - Per level: starts with 3 aliens, +2 each level, speed increases 15% per level
+- **Versus mode:** Aliens cannot be killed by players - they persist all game
 
 #### Coin System (`coin.js`)
 - `coinsPerPlayer` object tracks coins collected by each player
@@ -183,6 +186,8 @@ MazeShooter/
 23. Split alien targeting: half chase P1, half chase P2
 24. Versus-specific HUD showing both players' lives and coins
 25. Round completion screen with winner and running totals
+26. **Bug fix:** Lives now persist across levels (3 lives per game, not per level)
+27. **Bug fix:** Aliens persist in versus mode (cannot be killed by player projectiles)
 
 ## Future Development
 
