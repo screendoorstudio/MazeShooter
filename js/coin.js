@@ -139,6 +139,10 @@ const CoinManager = {
         return 1;
     },
 
+    allCollected() {
+        return this.totalCoins > 0 && this.collectedCoins >= this.totalCoins;
+    },
+
     clear() {
         this.coins = [];
         this.collectedCoins = 0;

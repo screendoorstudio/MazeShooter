@@ -16,8 +16,8 @@ const Game = {
 
     // Player stats
     playerStats: {
-        1: { level: 1, totalStars: 0, finished: false },
-        2: { level: 1, totalStars: 0, finished: false }
+        1: { level: 1, totalStars: 0, lives: 3, finished: false },
+        2: { level: 1, totalStars: 0, lives: 3, finished: false }
     },
 
     level: 1,
@@ -60,8 +60,8 @@ const Game = {
     startGame() {
         this.currentPlayer = 1;
         this.playerStats = {
-            1: { level: 1, totalStars: 0, finished: false },
-            2: { level: 1, totalStars: 0, finished: false }
+            1: { level: 1, totalStars: 0, lives: 3, finished: false },
+            2: { level: 1, totalStars: 0, lives: 3, finished: false }
         };
 
         this.level = 1;
@@ -81,6 +81,11 @@ const Game = {
             this.player = new Player(start.x, start.y);
         } else {
             this.player.reset(this.maze);
+        }
+
+        // In two-player mode, sync lives from playerStats
+        if (this.twoPlayerMode) {
+            this.player.lives = this.playerStats[this.currentPlayer].lives;
         }
 
         // Initialize coins
@@ -123,12 +128,19 @@ const Game = {
         Audio.play('gameOver');
     },
 
-    switchToPlayer2() {
-        this.currentPlayer = 2;
-        this.level = 1;
-        this.totalStars = 0;
+    switchToNextPlayer() {
+        const nextPlayer = this.currentPlayer === 1 ? 2 : 1;
+        this.currentPlayer = nextPlayer;
+
+        // Sync the player object's lives with the new current player's lives
+        this.player.lives = this.playerStats[this.currentPlayer].lives;
+        this.player.invincible = true;
+        this.player.invincibilityTimer = 2;
+
+        // Respawn at start position
+        this.player.respawn(this.maze);
+
         this.state = 'playing';
-        this.startLevel();
     },
 
     gameLoop(currentTime) {
@@ -173,7 +185,7 @@ const Game = {
 
             case 'switchPlayer':
                 if (Input.wasJustPressed('Space')) {
-                    this.switchToPlayer2();
+                    this.switchToNextPlayer();
                 }
                 break;
 
@@ -220,27 +232,56 @@ const Game = {
             }
         }
 
-        // Check if player reached exit
-        if (this.player.alive) {
-            const exit = this.maze.getExitBounds();
-            if (Collision.circleRect(
-                this.player.x, this.player.y, this.player.radius,
-                exit.x, exit.y, exit.width, exit.height
-            )) {
-                this.completeLevel();
-            }
+        // Check if all coins collected (level complete)
+        if (this.player.alive && CoinManager.allCollected()) {
+            this.completeLevel();
         }
     },
 
     handlePlayerHit() {
         Renderer.triggerFlash('rgba(255, 0, 0, 0.4)');
-        const isDead = this.player.takeDamage();
 
-        if (isDead) {
-            this.handleGameOver();
+        if (this.twoPlayerMode) {
+            // Two-player mode: handle turn alternation
+            Audio.play('playerHit');
+            this.playerStats[this.currentPlayer].lives--;
+            this.player.lives = this.playerStats[this.currentPlayer].lives;
+
+            const currentPlayerDead = this.playerStats[this.currentPlayer].lives <= 0;
+            const otherPlayer = this.currentPlayer === 1 ? 2 : 1;
+            const otherPlayerDead = this.playerStats[otherPlayer].finished;
+
+            if (currentPlayerDead) {
+                // Current player is out of lives
+                this.playerStats[this.currentPlayer].finished = true;
+                Audio.play('gameOver');
+
+                if (otherPlayerDead) {
+                    // Both players are finished
+                    this.state = 'finalResults';
+                } else {
+                    // Switch to other player who still has lives
+                    this.state = 'switchPlayer';
+                }
+            } else if (!otherPlayerDead) {
+                // Current player still has lives, other player also still in game
+                // Switch turns
+                this.state = 'switchPlayer';
+            } else {
+                // Current player still has lives, but other player is out
+                // Continue playing solo
+                this.player.respawn(this.maze);
+            }
         } else {
-            // Respawn player at start
-            this.player.respawn(this.maze);
+            // Single player mode: original behavior
+            const isDead = this.player.takeDamage();
+
+            if (isDead) {
+                this.handleGameOver();
+            } else {
+                // Respawn player at start
+                this.player.respawn(this.maze);
+            }
         }
     },
 
@@ -256,7 +297,6 @@ const Game = {
         // Always draw maze as background (except mode select)
         if (this.maze && this.state !== 'modeSelect') {
             Renderer.drawMaze(this.maze);
-            Renderer.drawExit(this.maze);
         }
 
         switch (this.state) {
@@ -279,7 +319,8 @@ const Game = {
 
             case 'switchPlayer':
                 this.renderPlaying();
-                Renderer.drawSwitchPlayer(this.playerStats[1]);
+                const nextPlayer = this.currentPlayer === 1 ? 2 : 1;
+                Renderer.drawSwitchPlayer(this.currentPlayer, nextPlayer, this.playerStats);
                 break;
 
             case 'gameOver':

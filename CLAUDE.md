@@ -6,7 +6,7 @@ A web-based maze shooter game built with HTML5 Canvas and vanilla JavaScript.
 
 ## Game Overview
 
-Navigate through randomly generated mazes, collect coins, shoot aliens, and reach the exit. The game features single-player and two-player alternating turn modes.
+Navigate through randomly generated mazes, collect all coins while shooting aliens. The game features single-player and two-player alternating turn modes.
 
 ### Controls
 | Key | Action |
@@ -18,11 +18,11 @@ Navigate through randomly generated mazes, collect coins, shoot aliens, and reac
 | 2 | Select two player mode |
 
 ### Gameplay
-- **Objective:** Navigate the maze to reach the green EXIT while collecting coins and avoiding/shooting aliens
-- **Lives:** 3 lives per game - lose a life when touched by an alien or hit by a purple laser
-- **Coins:** Collect coins for star ratings (1-3 stars based on percentage collected)
+- **Objective:** Collect ALL coins in the maze to complete the level while avoiding/shooting aliens
+- **Lives:** 3 lives per player - lose a life when touched by an alien or hit by a purple laser
+- **Coins:** Collect all coins to advance; star rating based on coin percentage when level ends (always 3 stars now)
 - **Levels:** Each level has a new random maze with more aliens that move faster
-- **Two-Player Mode:** Players take turns - highest combined score (level × 10 + stars) wins
+- **Two-Player Mode:** Players alternate turns when hit - highest combined score (level × 10 + stars) wins
 
 ### Star Rating
 - 0-33% coins = 1 star
@@ -115,6 +115,10 @@ MazeShooter/
 11. Implemented **two-player alternating turn mode**
 12. Set up Git repository
 13. Deployed to Vercel at https://maze-shooter.vercel.app/
+
+### Session 2 (Gameplay Changes)
+14. Changed level completion: collect ALL coins instead of reaching exit (removed exit door)
+15. Two-player mode: players now alternate turns when hit (not when game over)
 
 ## Future Development
 

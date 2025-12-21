@@ -128,7 +128,7 @@ const Renderer = {
         // Description
         ctx.fillStyle = '#7f8c8d';
         ctx.font = '16px Arial';
-        ctx.fillText('(Two players take turns - highest score wins!)', this.width / 2, this.height / 2 + 110);
+        ctx.fillText('(Players alternate when hit - highest score wins!)', this.width / 2, this.height / 2 + 110);
     },
 
     drawStartScreen(twoPlayerMode = false) {
@@ -161,7 +161,7 @@ const Renderer = {
         ctx.font = '18px Arial';
         ctx.fillText('Arrow Keys to Move', this.width / 2, this.height / 2 + 40);
         ctx.fillText('Space to Shoot', this.width / 2, this.height / 2 + 65);
-        ctx.fillText('Collect Coins & Reach the Exit!', this.width / 2, this.height / 2 + 90);
+        ctx.fillText('Collect All Coins to Complete Level!', this.width / 2, this.height / 2 + 90);
 
         // Start prompt
         ctx.fillStyle = '#2ecc71';
@@ -239,40 +239,63 @@ const Renderer = {
         }
     },
 
-    drawSwitchPlayer(player1Stats) {
+    drawSwitchPlayer(currentPlayer, nextPlayer, playerStats) {
         const ctx = this.ctx;
 
         // Dark overlay
         ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
         ctx.fillRect(0, 0, this.width, this.height);
 
-        // Player 1 finished
-        ctx.fillStyle = '#3498db';
-        ctx.font = 'bold 36px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('PLAYER 1 FINISHED!', this.width / 2, this.height / 2 - 100);
+        const currentStats = playerStats[currentPlayer];
+        const currentColor = currentPlayer === 1 ? '#3498db' : '#9b59b6';
+        const nextColor = nextPlayer === 1 ? '#3498db' : '#9b59b6';
 
-        // Player 1 stats
-        ctx.fillStyle = '#ecf0f1';
-        ctx.font = '24px Arial';
-        ctx.fillText(`Reached Level ${player1Stats.level}`, this.width / 2, this.height / 2 - 50);
-        ctx.fillText(`Stars Earned: ${player1Stats.totalStars}`, this.width / 2, this.height / 2 - 15);
+        // Check if current player is out of lives
+        if (currentStats.finished) {
+            // Current player is eliminated
+            ctx.fillStyle = currentColor;
+            ctx.font = 'bold 36px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(`PLAYER ${currentPlayer} IS OUT!`, this.width / 2, this.height / 2 - 100);
 
-        // Player 2 prompt
-        ctx.fillStyle = '#9b59b6';
-        ctx.font = 'bold 36px Arial';
-        ctx.fillText('PLAYER 2 - YOUR TURN!', this.width / 2, this.height / 2 + 50);
+            // Current player stats
+            ctx.fillStyle = '#ecf0f1';
+            ctx.font = '24px Arial';
+            ctx.fillText(`Reached Level ${currentStats.level}`, this.width / 2, this.height / 2 - 50);
+            ctx.fillText(`Stars Earned: ${currentStats.totalStars}`, this.width / 2, this.height / 2 - 15);
 
-        ctx.fillStyle = '#ecf0f1';
-        ctx.font = '20px Arial';
-        ctx.fillText('Can you beat Player 1\'s score?', this.width / 2, this.height / 2 + 90);
+            // Next player prompt
+            ctx.fillStyle = nextColor;
+            ctx.font = 'bold 36px Arial';
+            ctx.fillText(`PLAYER ${nextPlayer} - YOUR TURN!`, this.width / 2, this.height / 2 + 50);
+
+            ctx.fillStyle = '#ecf0f1';
+            ctx.font = '20px Arial';
+            ctx.fillText(`Can you beat Player ${currentPlayer}'s score?`, this.width / 2, this.height / 2 + 90);
+        } else {
+            // Regular turn switch (player was hit but still has lives)
+            ctx.fillStyle = currentColor;
+            ctx.font = 'bold 36px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(`PLAYER ${currentPlayer} WAS HIT!`, this.width / 2, this.height / 2 - 80);
+
+            // Show lives remaining
+            ctx.fillStyle = '#ecf0f1';
+            ctx.font = '24px Arial';
+            ctx.fillText(`Lives remaining: ${currentStats.lives}`, this.width / 2, this.height / 2 - 30);
+
+            // Next player prompt
+            ctx.fillStyle = nextColor;
+            ctx.font = 'bold 36px Arial';
+            ctx.fillText(`PLAYER ${nextPlayer} - YOUR TURN!`, this.width / 2, this.height / 2 + 30);
+        }
 
         // Continue prompt
         ctx.fillStyle = '#2ecc71';
         ctx.font = 'bold 24px Arial';
         const blink = Math.floor(Date.now() / 500) % 2;
         if (blink) {
-            ctx.fillText('Press SPACE to Start', this.width / 2, this.height / 2 + 140);
+            ctx.fillText('Press SPACE to Continue', this.width / 2, this.height / 2 + 120);
         }
     },
 
