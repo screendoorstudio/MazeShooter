@@ -411,6 +411,20 @@ const Game = {
             2: { totalCoins: 0, roundWins: 0, nextBonusLifeAt: 50 }
         };
 
+        // Reset players completely for new game
+        if (this.player) {
+            this.player.lives = 3;
+            this.player.alive = true;
+            this.player.hitsTaken = 0;
+            this.player.coinsCollected = 0;
+        }
+        if (this.player2) {
+            this.player2.lives = 3;
+            this.player2.alive = true;
+            this.player2.hitsTaken = 0;
+            this.player2.coinsCollected = 0;
+        }
+
         this.startVersusLevel();
         this.state = 'playing';
         Audio.resume();
