@@ -21,8 +21,8 @@ Navigate through randomly generated mazes, collect coins while shooting aliens. 
 | 1 | Select single player mode |
 | 2 | Select two-player alternating mode |
 | 3 | Select versus mode |
-| Space | Start game / Continue |
-| R | Restart after game over |
+| Space | Start game / Continue / Return to main menu |
+| R | Restart same game mode after game over |
 
 #### Gameplay Controls
 | Player | Movement | Shoot |
@@ -35,15 +35,18 @@ Navigate through randomly generated mazes, collect coins while shooting aliens. 
 #### Single Player
 - Collect ALL coins to complete each level
 - 3 lives - lose a life when hit by alien or purple laser
-- Star rating based on coin percentage (always 3 stars since you must collect all)
+- Random spawn position each level and on respawn
 - Aliens increase in number and speed each level
+- Stats tracked: Coins collected, Aliens killed, Levels completed
 
 #### Two-Player Alternating
-- Players take turns on their own separate mazes
+- Players take turns on the **same maze layout** (shared per level)
 - When hit, control switches to the other player
 - Each player has 3 lives independently
+- Random spawn position each level and on respawn
 - When a player loses all lives, they're eliminated
-- Winner determined by combined score (level × 10 + stars)
+- Winner determined by: (levels × 100) + coins + (aliens × 5)
+- "PLAYER ONE/TWO READY" message shown before each turn
 
 #### Versus Mode (Simultaneous)
 - Both players on the same maze at the same time
@@ -58,13 +61,22 @@ Navigate through randomly generated mazes, collect coins while shooting aliens. 
 - **Bonus Life:** Earn a free life every 50 coins collected
 - **Game Over:** When either player loses all lives, the game ends immediately
 - Half the aliens target Player 1, half target Player 2
-- Round winner is whoever collected more coins
-- Scores and round wins carry across levels
+- Stats tracked per player: Coins, Aliens killed, Levels
+- "PLAYERS READY" message shown before game starts
 
 ### Visual Identification
 - **Player 1:** Olive green camouflage, blue lasers
 - **Player 2:** Navy blue camouflage, orange lasers
 - **Aliens:** Red, purple lasers
+
+### Destructible Blocks (All Modes)
+- **Player destruction:** Shoot a wall 10 times to destroy it
+  - Each player can destroy ONE block per level
+  - Ability resets when advancing to next level
+  - Border walls cannot be destroyed
+- **Alien destruction:** Alien lasers destroy walls after 5 hits
+  - No limit on how many blocks aliens can destroy
+  - Creates dynamic gameplay as aliens open up the maze
 
 ## Technical Architecture
 
@@ -156,12 +168,13 @@ MazeShooter/
 
 #### Game States (`game.js`)
 - `modeSelect` - Choose mode (1, 2, or 3)
-- `start` - Instructions screen (varies by mode)
+- `start` - Instructions screen with "PLAYER READY" message
 - `playing` - Active gameplay
-- `levelComplete` - Show stars earned (non-versus)
+- `levelComplete` - Show coins/aliens for level (non-versus)
 - `versusComplete` - Show round winner and coin totals
+- `versusGameOver` - Versus mode game over (player eliminated)
 - `switchPlayer` - Two-player alternating mode transition
-- `gameOver` - Single player end
+- `gameOver` - Single player end (shows coins, aliens, levels)
 - `finalResults` - Two-player alternating comparison
 
 ## Development History
@@ -214,6 +227,24 @@ MazeShooter/
 37. **Random spawn positions** - both players spawn randomly each level
 38. **Random respawn** - after losing a life, respawn at random location (150px from other player)
 39. **Game over on elimination** - game ends when either player loses all lives
+
+### Session 5 (Stats & Destructible Blocks)
+40. **Versus game over screen** - proper game over when player eliminated (was showing round complete)
+41. **Game over navigation** - R restarts same mode, Space returns to main menu
+42. **Bug fix:** Versus mode now fully resets on new game (lives, hits, coins)
+43. **Destructible blocks** - shoot wall 10 times to destroy (1 block per player per level)
+44. **Alien laser destruction** - aliens destroy blocks after 5 hits (no limit)
+45. Added `hitWall()` and `hitWallAlien()` to Maze class
+46. Added `blocksDestroyedThisLevel` tracking per player
+47. **Same maze in alternating mode** - both players see identical maze layout per level
+48. Added `levelMazes` object to store mazes per level
+49. **Random spawns for all modes** - single player now spawns randomly too
+50. **New stats system** - replaced stars with coins/aliens/levels
+51. Updated all game over screens to show new stats
+52. Winner scoring: (levels × 100) + coins + (aliens × 5)
+53. HUD now shows aliens killed instead of stars
+54. **Ready messages** - "PLAYER ONE/TWO READY" or "PLAYERS READY" before game
+55. **State persistence fix** - blocksDestroyedThisLevel and aliensKilled saved when switching players
 
 ## Future Development
 
