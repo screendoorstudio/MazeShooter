@@ -183,7 +183,7 @@ class Maze {
         return Math.sqrt(dx * dx + dy * dy) < threshold;
     }
 
-    // Hit a wall - returns true if wall was destroyed (10 hits)
+    // Hit a wall by player - returns true if wall was destroyed (10 hits)
     hitWall(col, row) {
         if (!this.isWall(col, row)) return false;
 
@@ -197,6 +197,26 @@ class Maze {
 
         if (this.wallHits[key] >= 10) {
             this.destroyWall(col, row);
+            return true;
+        }
+        return false;
+    }
+
+    // Hit a wall by alien laser - destroys after 5 hits (no limit on blocks)
+    hitWallAlien(col, row) {
+        if (!this.isWall(col, row)) return false;
+
+        // Don't allow destroying border walls
+        if (col === 0 || col === this.cols - 1 || row === 0 || row === this.rows - 1) {
+            return false;
+        }
+
+        const key = `alien_${col},${row}`;
+        this.wallHits[key] = (this.wallHits[key] || 0) + 1;
+
+        if (this.wallHits[key] >= 5) {
+            this.destroyWall(col, row);
+            Audio.play('alienDeath'); // Sound for alien-destroyed block
             return true;
         }
         return false;

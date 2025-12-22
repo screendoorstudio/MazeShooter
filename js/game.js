@@ -17,18 +17,20 @@ const Game = {
 
     // Player stats (savedState stores maze, coins, aliens when switching)
     playerStats: {
-        1: { level: 1, totalStars: 0, lives: 3, finished: false, savedState: null },
-        2: { level: 1, totalStars: 0, lives: 3, finished: false, savedState: null }
+        1: { level: 1, totalCoins: 0, aliensKilled: 0, lives: 3, finished: false, savedState: null },
+        2: { level: 1, totalCoins: 0, aliensKilled: 0, lives: 3, finished: false, savedState: null }
     },
 
     // Versus mode stats
     versusStats: {
-        1: { totalCoins: 0, roundWins: 0 },
-        2: { totalCoins: 0, roundWins: 0 }
+        1: { totalCoins: 0, aliensKilled: 0, roundWins: 0 },
+        2: { totalCoins: 0, aliensKilled: 0, roundWins: 0 }
     },
 
+    // Game stats (for single player)
     level: 1,
-    totalStars: 0,
+    totalCoins: 0,
+    aliensKilled: 0,
     maze: null,
     player: null,
     player2: null, // Second player for versus mode
@@ -70,12 +72,13 @@ const Game = {
     startGame() {
         this.currentPlayer = 1;
         this.playerStats = {
-            1: { level: 1, totalStars: 0, lives: 3, finished: false, savedState: null },
-            2: { level: 1, totalStars: 0, lives: 3, finished: false, savedState: null }
+            1: { level: 1, totalCoins: 0, aliensKilled: 0, lives: 3, finished: false, savedState: null },
+            2: { level: 1, totalCoins: 0, aliensKilled: 0, lives: 3, finished: false, savedState: null }
         };
 
         this.level = 1;
-        this.totalStars = 0;
+        this.totalCoins = 0;
+        this.aliensKilled = 0;
         this.levelMazes = {}; // Store mazes per level for two-player mode (same maze for both)
         this.state = 'playing';
         this.startLevel();
@@ -180,10 +183,13 @@ const Game = {
     },
 
     nextLevel() {
-        // Add stars from completed level
-        const stars = CoinManager.getStars();
-        this.totalStars += stars;
-        this.playerStats[this.currentPlayer].totalStars += stars;
+        // Add coins collected this level to totals
+        this.totalCoins += CoinManager.collectedCoins;
+        this.playerStats[this.currentPlayer].totalCoins += CoinManager.collectedCoins;
+
+        // Add aliens killed this level (tracked on player object)
+        this.aliensKilled += this.player.aliensKilled;
+        this.playerStats[this.currentPlayer].aliensKilled += this.player.aliensKilled;
 
         this.level++;
         this.playerStats[this.currentPlayer].level = this.level;
@@ -196,8 +202,13 @@ const Game = {
     },
 
     handleGameOver() {
+        // Add final level stats
+        this.totalCoins += CoinManager.collectedCoins;
+        this.aliensKilled += this.player.aliensKilled;
+
         // Save current player's final stats
-        this.playerStats[this.currentPlayer].totalStars = this.totalStars;
+        this.playerStats[this.currentPlayer].totalCoins = this.totalCoins;
+        this.playerStats[this.currentPlayer].aliensKilled = this.aliensKilled;
         this.playerStats[this.currentPlayer].finished = true;
 
         if (this.twoPlayerMode && this.currentPlayer === 1 && !this.playerStats[2].finished) {
@@ -425,8 +436,8 @@ const Game = {
     startVersusGame() {
         this.level = 1;
         this.versusStats = {
-            1: { totalCoins: 0, roundWins: 0, nextBonusLifeAt: 50 },
-            2: { totalCoins: 0, roundWins: 0, nextBonusLifeAt: 50 }
+            1: { totalCoins: 0, aliensKilled: 0, roundWins: 0, nextBonusLifeAt: 50 },
+            2: { totalCoins: 0, aliensKilled: 0, roundWins: 0, nextBonusLifeAt: 50 }
         };
 
         // Reset players completely for new game
@@ -435,12 +446,14 @@ const Game = {
             this.player.alive = true;
             this.player.hitsTaken = 0;
             this.player.coinsCollected = 0;
+            this.player.aliensKilled = 0;
         }
         if (this.player2) {
             this.player2.lives = 3;
             this.player2.alive = true;
             this.player2.hitsTaken = 0;
             this.player2.coinsCollected = 0;
+            this.player2.aliensKilled = 0;
         }
 
         this.startVersusLevel();
@@ -498,9 +511,11 @@ const Game = {
             this.versusStats[winner].roundWins++;
         }
 
-        // Add coins to total
+        // Add coins and aliens killed to totals
         this.versusStats[1].totalCoins += CoinManager.getCoinsForPlayer(1);
         this.versusStats[2].totalCoins += CoinManager.getCoinsForPlayer(2);
+        this.versusStats[1].aliensKilled += this.player.aliensKilled;
+        this.versusStats[2].aliensKilled += this.player2.aliensKilled;
 
         this.level++;
         this.startVersusLevel();
@@ -638,9 +653,11 @@ const Game = {
         // Only trigger once
         if (this.state === 'versusGameOver') return;
 
-        // Add current level coins to totals
+        // Add current level stats to totals
         this.versusStats[1].totalCoins += CoinManager.getCoinsForPlayer(1);
         this.versusStats[2].totalCoins += CoinManager.getCoinsForPlayer(2);
+        this.versusStats[1].aliensKilled += this.player.aliensKilled;
+        this.versusStats[2].aliensKilled += this.player2.aliensKilled;
 
         Audio.play('gameOver');
         this.state = 'versusGameOver';
@@ -702,7 +719,7 @@ const Game = {
                 } else {
                     this.renderPlaying();
                 }
-                Renderer.drawLevelComplete(this.level, CoinManager.getStars(), this.twoPlayerMode, this.currentPlayer);
+                Renderer.drawLevelComplete(this.level, CoinManager.collectedCoins, this.player.aliensKilled, this.twoPlayerMode, this.currentPlayer);
                 break;
 
             case 'versusComplete':
@@ -723,7 +740,11 @@ const Game = {
 
             case 'gameOver':
                 this.renderPlaying();
-                Renderer.drawGameOver(this.level, this.totalStars);
+                Renderer.drawGameOver({
+                    level: this.level,
+                    totalCoins: this.totalCoins,
+                    aliensKilled: this.aliensKilled
+                });
                 break;
 
             case 'finalResults':
@@ -744,7 +765,7 @@ const Game = {
         Renderer.drawScreenFlash();
 
         // Update HUD
-        Renderer.updateHUD(this.player, CoinManager, this.level, CoinManager.getStars(), this.twoPlayerMode, this.currentPlayer);
+        Renderer.updateHUD(this.player, CoinManager, this.level, this.twoPlayerMode, this.currentPlayer);
     },
 
     renderVersus() {

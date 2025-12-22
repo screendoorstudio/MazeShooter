@@ -354,7 +354,7 @@ const AlienManager = {
         // Update all aliens
         this.aliens.forEach(alien => alien.update(deltaTime, maze, player));
 
-        // Check projectile hits
+        // Check projectile hits - track who killed the alien
         const playerProjectiles = ProjectileManager.getPlayerProjectiles();
         this.aliens.forEach(alien => {
             if (!alien.alive) return;
@@ -363,6 +363,10 @@ const AlienManager = {
                 if (proj.active && proj.hits(alien)) {
                     alien.die();
                     proj.active = false;
+                    // Track the kill
+                    if (proj.ownerId && this.players[0]) {
+                        this.players[0].aliensKilled++;
+                    }
                 }
             });
         });
@@ -408,6 +412,12 @@ const AlienManager = {
                     CoinManager.spawnCoin(alien.x, alien.y);
                     alien.die();
                     proj.active = false;
+                    // Track who killed the alien
+                    if (proj.ownerId === 1) {
+                        player1.aliensKilled++;
+                    } else if (proj.ownerId === 2) {
+                        player2.aliensKilled++;
+                    }
                 }
             });
         });

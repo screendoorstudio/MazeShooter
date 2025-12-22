@@ -145,46 +145,56 @@ const Renderer = {
         ctx.fillStyle = '#3498db';
         ctx.font = 'bold 48px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('MAZE SHOOTER', this.width / 2, this.height / 2 - 100);
+        ctx.fillText('MAZE SHOOTER', this.width / 2, this.height / 2 - 120);
 
-        // Mode indicator
+        // Mode indicator and ready message
         if (versusMode) {
             ctx.fillStyle = '#e74c3c';
             ctx.font = 'bold 24px Arial';
-            ctx.fillText('VERSUS MODE', this.width / 2, this.height / 2 - 60);
+            ctx.fillText('VERSUS MODE', this.width / 2, this.height / 2 - 80);
+
+            // Ready message
+            ctx.fillStyle = '#2ecc71';
+            ctx.font = 'bold 36px Arial';
+            ctx.fillText('PLAYERS READY', this.width / 2, this.height / 2 - 35);
 
             // Versus instructions
             ctx.fillStyle = '#ecf0f1';
             ctx.font = '16px Arial';
-            ctx.fillText('P1: Arrow Keys + Right Shift to Shoot', this.width / 2, this.height / 2 - 20);
-            ctx.fillText('P2: WASD + Left Shift to Shoot', this.width / 2, this.height / 2 + 5);
-
+            ctx.fillText('P1: Arrow Keys + Right Shift to Shoot', this.width / 2, this.height / 2 + 5);
+            ctx.fillText('P2: WASD + Left Shift to Shoot', this.width / 2, this.height / 2 + 30);
             ctx.fillStyle = '#ffd700';
-            ctx.font = '18px Arial';
-            ctx.fillText('Collect the most coins to win!', this.width / 2, this.height / 2 + 40);
-            ctx.fillText('3 hits = lose a life (3 lives each)', this.width / 2, this.height / 2 + 65);
+            ctx.fillText('Collect the most coins to win!', this.width / 2, this.height / 2 + 60);
         } else if (twoPlayerMode) {
             ctx.fillStyle = '#9b59b6';
             ctx.font = 'bold 24px Arial';
-            ctx.fillText('TWO PLAYER MODE', this.width / 2, this.height / 2 - 60);
+            ctx.fillText('TWO PLAYER MODE', this.width / 2, this.height / 2 - 80);
+
+            // Ready message
+            ctx.fillStyle = '#3498db';
+            ctx.font = 'bold 36px Arial';
+            ctx.fillText('PLAYER ONE READY', this.width / 2, this.height / 2 - 35);
 
             // Standard instructions
             ctx.fillStyle = '#ecf0f1';
             ctx.font = '18px Arial';
-            ctx.fillText('Arrow Keys to Move, Space to Shoot', this.width / 2, this.height / 2 - 10);
-            ctx.fillText('Collect All Coins to Complete Level!', this.width / 2, this.height / 2 + 20);
-            ctx.fillText('Players alternate when hit', this.width / 2, this.height / 2 + 50);
+            ctx.fillText('Arrow Keys to Move, Space to Shoot', this.width / 2, this.height / 2 + 10);
+            ctx.fillText('Collect All Coins to Complete Level!', this.width / 2, this.height / 2 + 40);
         } else {
             // Single player
             ctx.fillStyle = '#e74c3c';
             ctx.font = '24px Arial';
-            ctx.fillText('Survive the Aliens!', this.width / 2, this.height / 2 - 40);
+            ctx.fillText('Survive the Aliens!', this.width / 2, this.height / 2 - 70);
+
+            // Ready message
+            ctx.fillStyle = '#3498db';
+            ctx.font = 'bold 36px Arial';
+            ctx.fillText('PLAYER ONE READY', this.width / 2, this.height / 2 - 25);
 
             ctx.fillStyle = '#ecf0f1';
             ctx.font = '18px Arial';
-            ctx.fillText('Arrow Keys to Move', this.width / 2, this.height / 2 + 10);
-            ctx.fillText('Space to Shoot', this.width / 2, this.height / 2 + 35);
-            ctx.fillText('Collect All Coins to Complete Level!', this.width / 2, this.height / 2 + 60);
+            ctx.fillText('Arrow Keys to Move, Space to Shoot', this.width / 2, this.height / 2 + 20);
+            ctx.fillText('Collect All Coins to Complete Level!', this.width / 2, this.height / 2 + 50);
         }
 
         // Start prompt
@@ -196,7 +206,7 @@ const Renderer = {
         }
     },
 
-    drawGameOver(finalLevel, totalStars) {
+    drawGameOver(stats) {
         const ctx = this.ctx;
 
         // Dark overlay
@@ -207,24 +217,27 @@ const Renderer = {
         ctx.fillStyle = '#e74c3c';
         ctx.font = 'bold 56px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('GAME OVER', this.width / 2, this.height / 2 - 60);
+        ctx.fillText('GAME OVER', this.width / 2, this.height / 2 - 80);
 
         // Stats
         ctx.fillStyle = '#ecf0f1';
-        ctx.font = '24px Arial';
-        ctx.fillText(`Reached Level ${finalLevel}`, this.width / 2, this.height / 2);
-        ctx.fillText(`Total Stars: ${totalStars}`, this.width / 2, this.height / 2 + 35);
+        ctx.font = '22px Arial';
+        ctx.fillText(`Levels Completed: ${stats.level - 1}`, this.width / 2, this.height / 2 - 20);
+        ctx.fillStyle = '#ffd700';
+        ctx.fillText(`Coins Collected: ${stats.totalCoins}`, this.width / 2, this.height / 2 + 15);
+        ctx.fillStyle = '#e74c3c';
+        ctx.fillText(`Aliens Killed: ${stats.aliensKilled}`, this.width / 2, this.height / 2 + 50);
 
         // Restart prompts
         ctx.fillStyle = '#7f8c8d';
         ctx.font = 'bold 18px Arial';
         const blink = Math.floor(Date.now() / 500) % 2;
         if (blink) {
-            ctx.fillText('R - Play Again  |  SPACE - Main Menu', this.width / 2, this.height / 2 + 90);
+            ctx.fillText('R - Play Again  |  SPACE - Main Menu', this.width / 2, this.height / 2 + 100);
         }
     },
 
-    drawLevelComplete(level, stars, twoPlayerMode = false, currentPlayer = 1) {
+    drawLevelComplete(level, coinsCollected, aliensKilled, twoPlayerMode = false, currentPlayer = 1) {
         const ctx = this.ctx;
 
         // Dark overlay
@@ -245,21 +258,19 @@ const Renderer = {
         ctx.textAlign = 'center';
         ctx.fillText(`LEVEL ${level} COMPLETE!`, this.width / 2, this.height / 2 - 40);
 
-        // Stars
-        ctx.font = '48px Arial';
-        let starsText = '';
-        for (let i = 0; i < 3; i++) {
-            starsText += i < stars ? '★' : '☆';
-        }
+        // Level stats
+        ctx.font = '24px Arial';
         ctx.fillStyle = '#ffd700';
-        ctx.fillText(starsText, this.width / 2, this.height / 2 + 30);
+        ctx.fillText(`Coins: ${coinsCollected}`, this.width / 2 - 70, this.height / 2 + 20);
+        ctx.fillStyle = '#e74c3c';
+        ctx.fillText(`Aliens: ${aliensKilled}`, this.width / 2 + 70, this.height / 2 + 20);
 
         // Continue prompt
         ctx.fillStyle = '#ecf0f1';
         ctx.font = 'bold 20px Arial';
         const blink = Math.floor(Date.now() / 500) % 2;
         if (blink) {
-            ctx.fillText('Press SPACE for Next Level', this.width / 2, this.height / 2 + 90);
+            ctx.fillText('Press SPACE for Next Level', this.width / 2, this.height / 2 + 70);
         }
     },
 
@@ -284,18 +295,17 @@ const Renderer = {
 
             // Current player stats
             ctx.fillStyle = '#ecf0f1';
-            ctx.font = '24px Arial';
-            ctx.fillText(`Reached Level ${currentStats.level}`, this.width / 2, this.height / 2 - 50);
-            ctx.fillText(`Stars Earned: ${currentStats.totalStars}`, this.width / 2, this.height / 2 - 15);
+            ctx.font = '20px Arial';
+            ctx.fillText(`Levels: ${currentStats.level - 1}  |  Coins: ${currentStats.totalCoins}  |  Aliens: ${currentStats.aliensKilled}`, this.width / 2, this.height / 2 - 50);
 
-            // Next player prompt
+            // Ready message
             ctx.fillStyle = nextColor;
-            ctx.font = 'bold 36px Arial';
-            ctx.fillText(`PLAYER ${nextPlayer} - YOUR TURN!`, this.width / 2, this.height / 2 + 50);
+            ctx.font = 'bold 48px Arial';
+            ctx.fillText(`PLAYER ${nextPlayer === 1 ? 'ONE' : 'TWO'} READY`, this.width / 2, this.height / 2 + 30);
 
             ctx.fillStyle = '#ecf0f1';
             ctx.font = '20px Arial';
-            ctx.fillText(`Can you beat Player ${currentPlayer}'s score?`, this.width / 2, this.height / 2 + 90);
+            ctx.fillText(`Can you beat Player ${currentPlayer}'s score?`, this.width / 2, this.height / 2 + 70);
         } else {
             // Regular turn switch (player was hit but still has lives)
             ctx.fillStyle = currentColor;
@@ -308,10 +318,10 @@ const Renderer = {
             ctx.font = '24px Arial';
             ctx.fillText(`Lives remaining: ${currentStats.lives}`, this.width / 2, this.height / 2 - 30);
 
-            // Next player prompt
+            // Ready message
             ctx.fillStyle = nextColor;
-            ctx.font = 'bold 36px Arial';
-            ctx.fillText(`PLAYER ${nextPlayer} - YOUR TURN!`, this.width / 2, this.height / 2 + 30);
+            ctx.font = 'bold 48px Arial';
+            ctx.fillText(`PLAYER ${nextPlayer === 1 ? 'ONE' : 'TWO'} READY`, this.width / 2, this.height / 2 + 40);
         }
 
         // Continue prompt
@@ -341,33 +351,39 @@ const Renderer = {
         ctx.font = 'bold 28px Arial';
         ctx.fillText('PLAYER 1', this.width / 2 - 120, this.height / 2 - 70);
         ctx.fillStyle = '#ecf0f1';
-        ctx.font = '20px Arial';
-        ctx.fillText(`Level: ${playerStats[1].level}`, this.width / 2 - 120, this.height / 2 - 35);
-        ctx.fillText(`Stars: ${playerStats[1].totalStars}`, this.width / 2 - 120, this.height / 2 - 5);
+        ctx.font = '18px Arial';
+        ctx.fillText(`Levels: ${playerStats[1].level - 1}`, this.width / 2 - 120, this.height / 2 - 35);
+        ctx.fillStyle = '#ffd700';
+        ctx.fillText(`Coins: ${playerStats[1].totalCoins}`, this.width / 2 - 120, this.height / 2 - 10);
+        ctx.fillStyle = '#e74c3c';
+        ctx.fillText(`Aliens: ${playerStats[1].aliensKilled}`, this.width / 2 - 120, this.height / 2 + 15);
 
         // Player 2 stats
         ctx.fillStyle = '#9b59b6';
         ctx.font = 'bold 28px Arial';
         ctx.fillText('PLAYER 2', this.width / 2 + 120, this.height / 2 - 70);
         ctx.fillStyle = '#ecf0f1';
-        ctx.font = '20px Arial';
-        ctx.fillText(`Level: ${playerStats[2].level}`, this.width / 2 + 120, this.height / 2 - 35);
-        ctx.fillText(`Stars: ${playerStats[2].totalStars}`, this.width / 2 + 120, this.height / 2 - 5);
+        ctx.font = '18px Arial';
+        ctx.fillText(`Levels: ${playerStats[2].level - 1}`, this.width / 2 + 120, this.height / 2 - 35);
+        ctx.fillStyle = '#ffd700';
+        ctx.fillText(`Coins: ${playerStats[2].totalCoins}`, this.width / 2 + 120, this.height / 2 - 10);
+        ctx.fillStyle = '#e74c3c';
+        ctx.fillText(`Aliens: ${playerStats[2].aliensKilled}`, this.width / 2 + 120, this.height / 2 + 15);
 
-        // Determine winner
-        const p1Score = playerStats[1].level * 10 + playerStats[1].totalStars;
-        const p2Score = playerStats[2].level * 10 + playerStats[2].totalStars;
+        // Determine winner (levels * 100 + coins + aliens * 5)
+        const p1Score = (playerStats[1].level - 1) * 100 + playerStats[1].totalCoins + playerStats[1].aliensKilled * 5;
+        const p2Score = (playerStats[2].level - 1) * 100 + playerStats[2].totalCoins + playerStats[2].aliensKilled * 5;
 
         ctx.font = 'bold 36px Arial';
         if (p1Score > p2Score) {
             ctx.fillStyle = '#3498db';
-            ctx.fillText('PLAYER 1 WINS!', this.width / 2, this.height / 2 + 60);
+            ctx.fillText('PLAYER 1 WINS!', this.width / 2, this.height / 2 + 70);
         } else if (p2Score > p1Score) {
             ctx.fillStyle = '#9b59b6';
-            ctx.fillText('PLAYER 2 WINS!', this.width / 2, this.height / 2 + 60);
+            ctx.fillText('PLAYER 2 WINS!', this.width / 2, this.height / 2 + 70);
         } else {
             ctx.fillStyle = '#2ecc71';
-            ctx.fillText('IT\'S A TIE!', this.width / 2, this.height / 2 + 60);
+            ctx.fillText("IT'S A TIE!", this.width / 2, this.height / 2 + 70);
         }
 
         // Restart prompts
@@ -379,7 +395,7 @@ const Renderer = {
         }
     },
 
-    updateHUD(player, coins, level, stars, twoPlayerMode = false, currentPlayer = 1) {
+    updateHUD(player, coins, level, twoPlayerMode = false, currentPlayer = 1) {
         // Update lives
         const livesDiv = document.getElementById('lives');
         livesDiv.innerHTML = '';
@@ -411,16 +427,9 @@ const Renderer = {
         // Update level
         document.getElementById('levelNum').textContent = level;
 
-        // Update stars preview
-        const currentStars = coins.getStars();
+        // Show aliens killed instead of stars
         const starsDiv = document.getElementById('stars');
-        starsDiv.innerHTML = '';
-        for (let i = 0; i < 3; i++) {
-            const star = document.createElement('span');
-            star.className = 'star' + (i < currentStars ? ' filled' : '');
-            star.textContent = i < currentStars ? '★' : '☆';
-            starsDiv.appendChild(star);
-        }
+        starsDiv.innerHTML = `<span style="color: #e74c3c">Aliens: ${player.aliensKilled}</span>`;
     },
 
     // Versus mode HUD
@@ -559,7 +568,7 @@ const Renderer = {
         ctx.fillStyle = '#e74c3c';
         ctx.font = 'bold 56px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('GAME OVER', this.width / 2, this.height / 2 - 100);
+        ctx.fillText('GAME OVER', this.width / 2, this.height / 2 - 110);
 
         // Determine winner (whoever still has lives or most coins)
         const p1Alive = player1.alive;
@@ -585,26 +594,40 @@ const Renderer = {
         // Show elimination reason
         ctx.fillStyle = '#ecf0f1';
         ctx.font = '24px Arial';
-        ctx.fillText(winReason, this.width / 2, this.height / 2 - 50);
+        ctx.fillText(winReason, this.width / 2, this.height / 2 - 60);
 
-        // Final stats
-        ctx.font = 'bold 20px Arial';
+        // Final stats - Player 1
+        ctx.font = '18px Arial';
         ctx.fillStyle = '#3498db';
-        ctx.fillText(`P1: ${versusStats[1].totalCoins} coins`, this.width / 2 - 80, this.height / 2);
+        ctx.fillText('P1', this.width / 2 - 100, this.height / 2 - 25);
+        ctx.fillStyle = '#ecf0f1';
+        ctx.fillText(`Levels: ${level - 1}`, this.width / 2 - 100, this.height / 2);
+        ctx.fillStyle = '#ffd700';
+        ctx.fillText(`Coins: ${versusStats[1].totalCoins}`, this.width / 2 - 100, this.height / 2 + 20);
+        ctx.fillStyle = '#e74c3c';
+        ctx.fillText(`Aliens: ${versusStats[1].aliensKilled}`, this.width / 2 - 100, this.height / 2 + 40);
+
+        // Final stats - Player 2
         ctx.fillStyle = '#264d8a';
-        ctx.fillText(`P2: ${versusStats[2].totalCoins} coins`, this.width / 2 + 80, this.height / 2);
+        ctx.fillText('P2', this.width / 2 + 100, this.height / 2 - 25);
+        ctx.fillStyle = '#ecf0f1';
+        ctx.fillText(`Levels: ${level - 1}`, this.width / 2 + 100, this.height / 2);
+        ctx.fillStyle = '#ffd700';
+        ctx.fillText(`Coins: ${versusStats[2].totalCoins}`, this.width / 2 + 100, this.height / 2 + 20);
+        ctx.fillStyle = '#e74c3c';
+        ctx.fillText(`Aliens: ${versusStats[2].aliensKilled}`, this.width / 2 + 100, this.height / 2 + 40);
 
         // Winner announcement
         ctx.font = 'bold 36px Arial';
         if (winner === 1) {
             ctx.fillStyle = '#3498db';
-            ctx.fillText('PLAYER 1 WINS!', this.width / 2, this.height / 2 + 50);
+            ctx.fillText('PLAYER 1 WINS!', this.width / 2, this.height / 2 + 85);
         } else if (winner === 2) {
             ctx.fillStyle = '#264d8a';
-            ctx.fillText('PLAYER 2 WINS!', this.width / 2, this.height / 2 + 50);
+            ctx.fillText('PLAYER 2 WINS!', this.width / 2, this.height / 2 + 85);
         } else {
             ctx.fillStyle = '#2ecc71';
-            ctx.fillText("IT'S A TIE!", this.width / 2, this.height / 2 + 50);
+            ctx.fillText("IT'S A TIE!", this.width / 2, this.height / 2 + 85);
         }
 
         // Restart prompts
@@ -612,7 +635,7 @@ const Renderer = {
         ctx.font = 'bold 18px Arial';
         const blink = Math.floor(Date.now() / 500) % 2;
         if (blink) {
-            ctx.fillText('R - Play Again  |  SPACE - Main Menu', this.width / 2, this.height / 2 + 110);
+            ctx.fillText('R - Play Again  |  SPACE - Main Menu', this.width / 2, this.height / 2 + 130);
         }
     }
 };

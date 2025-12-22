@@ -34,6 +34,7 @@ class Player {
         // Versus mode properties
         this.hitsTaken = 0; // Track hits for versus mode (3 hits = death)
         this.coinsCollected = 0; // Track coins for versus mode
+        this.aliensKilled = 0; // Track aliens killed
         // Destructible blocks - 1 per level
         this.blocksDestroyedThisLevel = 0;
     }
@@ -265,6 +266,7 @@ class Player {
         this.shootCooldown = 0;
         this.hitsTaken = 0;
         this.coinsCollected = 0;
+        this.aliensKilled = 0;
         this.blocksDestroyedThisLevel = 0;
     }
 

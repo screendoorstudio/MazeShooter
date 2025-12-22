@@ -50,11 +50,10 @@ class Projectile {
 
         // Check wall collision
         if (Collision.entityWall(newX, newY, this.radius, maze)) {
-            // If this is a player projectile, try to damage the wall
-            if (this.isPlayerProjectile && this.ownerId) {
-                const wallCell = maze.getWallCellAt(newX, newY);
-                if (wallCell) {
-                    // Get the player who fired this
+            const wallCell = maze.getWallCellAt(newX, newY);
+            if (wallCell) {
+                if (this.isPlayerProjectile && this.ownerId) {
+                    // Player projectile - can destroy 1 block per level after 10 hits
                     const shooter = this.ownerId === 1 ? player : player2;
                     if (shooter && shooter.blocksDestroyedThisLevel < 1) {
                         const destroyed = maze.hitWall(wallCell.col, wallCell.row);
@@ -63,6 +62,9 @@ class Projectile {
                             Audio.play('levelComplete'); // Satisfying sound for block destruction
                         }
                     }
+                } else {
+                    // Alien projectile - destroys blocks after 5 hits (no limit)
+                    maze.hitWallAlien(wallCell.col, wallCell.row);
                 }
             }
             this.active = false;
