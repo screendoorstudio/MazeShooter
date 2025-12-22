@@ -34,6 +34,8 @@ class Player {
         // Versus mode properties
         this.hitsTaken = 0; // Track hits for versus mode (3 hits = death)
         this.coinsCollected = 0; // Track coins for versus mode
+        // Destructible blocks - 1 per level
+        this.blocksDestroyedThisLevel = 0;
     }
 
     update(deltaTime, maze) {
@@ -243,9 +245,10 @@ class Player {
     }
 
     respawn(maze) {
-        const start = maze.getStartPosition();
-        this.x = start.x;
-        this.y = start.y;
+        // Spawn at random position
+        const spawnPos = maze.getRandomPathCell();
+        this.x = spawnPos.x;
+        this.y = spawnPos.y;
         this.direction = 'right';
         this.invincible = true;
         this.invincibleTime = this.invincibleDuration;
@@ -253,9 +256,7 @@ class Player {
     }
 
     reset(maze) {
-        const start = maze.getStartPosition();
-        this.x = start.x;
-        this.y = start.y;
+        // Position will be set by caller (random spawn)
         this.direction = 'right';
         this.lives = 3;
         this.alive = true;
@@ -264,6 +265,7 @@ class Player {
         this.shootCooldown = 0;
         this.hitsTaken = 0;
         this.coinsCollected = 0;
+        this.blocksDestroyedThisLevel = 0;
     }
 
     // Versus mode: Take a hit from another player (2 hits = death)

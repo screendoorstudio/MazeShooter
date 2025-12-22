@@ -8,6 +8,9 @@ class Maze {
         this.width = cols * cellSize;
         this.height = rows * cellSize;
 
+        // Track wall hits for destructible blocks
+        this.wallHits = {}; // key: "col,row", value: hit count
+
         // Generate the maze
         this.generate();
     }
@@ -178,5 +181,47 @@ class Maze {
         const dx = x - exit.x;
         const dy = y - exit.y;
         return Math.sqrt(dx * dx + dy * dy) < threshold;
+    }
+
+    // Hit a wall - returns true if wall was destroyed (10 hits)
+    hitWall(col, row) {
+        if (!this.isWall(col, row)) return false;
+
+        // Don't allow destroying border walls
+        if (col === 0 || col === this.cols - 1 || row === 0 || row === this.rows - 1) {
+            return false;
+        }
+
+        const key = `${col},${row}`;
+        this.wallHits[key] = (this.wallHits[key] || 0) + 1;
+
+        if (this.wallHits[key] >= 10) {
+            this.destroyWall(col, row);
+            return true;
+        }
+        return false;
+    }
+
+    // Get hit count for a wall (for visual feedback)
+    getWallHits(col, row) {
+        const key = `${col},${row}`;
+        return this.wallHits[key] || 0;
+    }
+
+    // Destroy a wall (turn it into a path)
+    destroyWall(col, row) {
+        if (col >= 0 && col < this.cols && row >= 0 && row < this.rows) {
+            this.grid[row][col] = 0; // 0 = path
+        }
+    }
+
+    // Get wall cell at a pixel position
+    getWallCellAt(x, y) {
+        const col = Math.floor(x / this.cellSize);
+        const row = Math.floor(y / this.cellSize);
+        if (this.isWall(col, row)) {
+            return { col, row };
+        }
+        return null;
     }
 }

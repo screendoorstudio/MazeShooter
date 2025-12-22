@@ -41,7 +41,7 @@ class Projectile {
         }
     }
 
-    update(deltaTime, maze) {
+    update(deltaTime, maze, player = null, player2 = null) {
         if (!this.active) return;
 
         // Move projectile
@@ -50,6 +50,21 @@ class Projectile {
 
         // Check wall collision
         if (Collision.entityWall(newX, newY, this.radius, maze)) {
+            // If this is a player projectile, try to damage the wall
+            if (this.isPlayerProjectile && this.ownerId) {
+                const wallCell = maze.getWallCellAt(newX, newY);
+                if (wallCell) {
+                    // Get the player who fired this
+                    const shooter = this.ownerId === 1 ? player : player2;
+                    if (shooter && shooter.blocksDestroyedThisLevel < 1) {
+                        const destroyed = maze.hitWall(wallCell.col, wallCell.row);
+                        if (destroyed) {
+                            shooter.blocksDestroyedThisLevel++;
+                            Audio.play('levelComplete'); // Satisfying sound for block destruction
+                        }
+                    }
+                }
+            }
             this.active = false;
             return;
         }
@@ -110,8 +125,8 @@ const ProjectileManager = {
         this.projectiles.push(projectile);
     },
 
-    update(deltaTime, maze) {
-        this.projectiles.forEach(p => p.update(deltaTime, maze));
+    update(deltaTime, maze, player = null, player2 = null) {
+        this.projectiles.forEach(p => p.update(deltaTime, maze, player, player2));
         // Remove inactive projectiles
         this.projectiles = this.projectiles.filter(p => p.active);
     },

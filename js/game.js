@@ -76,22 +76,39 @@ const Game = {
 
         this.level = 1;
         this.totalStars = 0;
+        this.levelMazes = {}; // Store mazes per level for two-player mode (same maze for both)
         this.state = 'playing';
         this.startLevel();
         Audio.resume();
     },
 
     startLevel() {
-        // Generate new maze
-        this.maze = new Maze(this.MAZE_COLS, this.MAZE_ROWS, this.cellSize);
+        // In two-player mode, both players use the same maze for the same level
+        if (this.twoPlayerMode && this.levelMazes && this.levelMazes[this.level]) {
+            this.maze = this.levelMazes[this.level];
+        } else {
+            this.maze = new Maze(this.MAZE_COLS, this.MAZE_ROWS, this.cellSize);
+            // Store maze for this level in two-player mode
+            if (this.twoPlayerMode) {
+                if (!this.levelMazes) this.levelMazes = {};
+                this.levelMazes[this.level] = this.maze;
+            }
+        }
+
+        // Get random spawn position
+        const spawnPos = this.maze.getRandomPathCell();
 
         // Initialize or reset player
         if (!this.player) {
-            const start = this.maze.getStartPosition();
-            this.player = new Player(start.x, start.y);
+            this.player = new Player(spawnPos.x, spawnPos.y);
         } else {
             this.player.reset(this.maze);
+            this.player.x = spawnPos.x;
+            this.player.y = spawnPos.y;
         }
+
+        // Reset block destruction count for new level
+        this.player.blocksDestroyedThisLevel = 0;
 
         // In two-player mode, sync lives from playerStats
         if (this.twoPlayerMode) {
@@ -129,8 +146,9 @@ const Game = {
         const saved = this.playerStats[playerNum].savedState;
         if (!saved) return false;
 
-        this.maze = saved.maze;
         this.level = saved.level;
+        // Use shared maze for this level (both players see same maze)
+        this.maze = this.levelMazes[this.level] || saved.maze;
         this.totalStars = saved.totalStars;
         this.gameTime = saved.gameTime;
 
@@ -322,8 +340,8 @@ const Game = {
         // Update aliens
         AlienManager.update(deltaTime, this.maze, this.player);
 
-        // Update projectiles
-        ProjectileManager.update(deltaTime, this.maze);
+        // Update projectiles (pass player for wall destruction)
+        ProjectileManager.update(deltaTime, this.maze, this.player, null);
 
         // Check alien projectile hits on player
         if (this.player.alive && !this.player.invincible) {
@@ -447,6 +465,8 @@ const Game = {
             // Don't reset lives - they persist across levels
             this.player.coinsCollected = 0;
         }
+        // Reset block destruction for new level
+        this.player.blocksDestroyedThisLevel = 0;
 
         // Initialize Player 2 at random position (away from P1)
         if (!this.player2) {
@@ -456,6 +476,8 @@ const Game = {
             // Don't reset lives - they persist across levels
             this.player2.coinsCollected = 0;
         }
+        // Reset block destruction for new level
+        this.player2.blocksDestroyedThisLevel = 0;
 
         // Initialize coins
         CoinManager.init(this.maze, this.COINS_PER_LEVEL);
@@ -510,8 +532,8 @@ const Game = {
         // Update aliens
         AlienManager.updateVersus(deltaTime, this.maze, this.player, this.player2);
 
-        // Update projectiles
-        ProjectileManager.update(deltaTime, this.maze);
+        // Update projectiles (pass both players for wall destruction)
+        ProjectileManager.update(deltaTime, this.maze, this.player, this.player2);
 
         // Check projectile-vs-projectile collisions (player lasers destroy alien lasers)
         ProjectileManager.checkProjectileCollisions();
