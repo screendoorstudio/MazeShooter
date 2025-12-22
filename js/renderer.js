@@ -215,12 +215,12 @@ const Renderer = {
         ctx.fillText(`Reached Level ${finalLevel}`, this.width / 2, this.height / 2);
         ctx.fillText(`Total Stars: ${totalStars}`, this.width / 2, this.height / 2 + 35);
 
-        // Restart prompt
-        ctx.fillStyle = '#3498db';
-        ctx.font = 'bold 20px Arial';
+        // Restart prompts
+        ctx.fillStyle = '#7f8c8d';
+        ctx.font = 'bold 18px Arial';
         const blink = Math.floor(Date.now() / 500) % 2;
         if (blink) {
-            ctx.fillText('Press R to Play Again', this.width / 2, this.height / 2 + 90);
+            ctx.fillText('R - Play Again  |  SPACE - Main Menu', this.width / 2, this.height / 2 + 90);
         }
     },
 
@@ -370,12 +370,12 @@ const Renderer = {
             ctx.fillText('IT\'S A TIE!', this.width / 2, this.height / 2 + 60);
         }
 
-        // Restart prompt
+        // Restart prompts
         ctx.fillStyle = '#7f8c8d';
-        ctx.font = 'bold 20px Arial';
+        ctx.font = 'bold 18px Arial';
         const blink = Math.floor(Date.now() / 500) % 2;
         if (blink) {
-            ctx.fillText('Press R to Play Again', this.width / 2, this.height / 2 + 120);
+            ctx.fillText('R - Play Again  |  SPACE - Main Menu', this.width / 2, this.height / 2 + 120);
         }
     },
 
@@ -544,6 +544,75 @@ const Renderer = {
         const blink = Math.floor(Date.now() / 500) % 2;
         if (blink) {
             ctx.fillText('Press SPACE for Next Level', this.width / 2, this.height / 2 + 130);
+        }
+    },
+
+    // Versus game over screen (when a player is eliminated)
+    drawVersusGameOver(level, versusStats, player1, player2) {
+        const ctx = this.ctx;
+
+        // Dark overlay
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+        ctx.fillRect(0, 0, this.width, this.height);
+
+        // Game Over text
+        ctx.fillStyle = '#e74c3c';
+        ctx.font = 'bold 56px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('GAME OVER', this.width / 2, this.height / 2 - 100);
+
+        // Determine winner (whoever still has lives or most coins)
+        const p1Alive = player1.alive;
+        const p2Alive = player2.alive;
+        let winner = null;
+        let winReason = '';
+
+        if (p1Alive && !p2Alive) {
+            winner = 1;
+            winReason = 'Player 2 Eliminated!';
+        } else if (p2Alive && !p1Alive) {
+            winner = 2;
+            winReason = 'Player 1 Eliminated!';
+        } else {
+            // Both dead somehow - compare coins
+            if (versusStats[1].totalCoins > versusStats[2].totalCoins) {
+                winner = 1;
+            } else if (versusStats[2].totalCoins > versusStats[1].totalCoins) {
+                winner = 2;
+            }
+        }
+
+        // Show elimination reason
+        ctx.fillStyle = '#ecf0f1';
+        ctx.font = '24px Arial';
+        ctx.fillText(winReason, this.width / 2, this.height / 2 - 50);
+
+        // Final stats
+        ctx.font = 'bold 20px Arial';
+        ctx.fillStyle = '#3498db';
+        ctx.fillText(`P1: ${versusStats[1].totalCoins} coins`, this.width / 2 - 80, this.height / 2);
+        ctx.fillStyle = '#264d8a';
+        ctx.fillText(`P2: ${versusStats[2].totalCoins} coins`, this.width / 2 + 80, this.height / 2);
+
+        // Winner announcement
+        ctx.font = 'bold 36px Arial';
+        if (winner === 1) {
+            ctx.fillStyle = '#3498db';
+            ctx.fillText('PLAYER 1 WINS!', this.width / 2, this.height / 2 + 50);
+        } else if (winner === 2) {
+            ctx.fillStyle = '#264d8a';
+            ctx.fillText('PLAYER 2 WINS!', this.width / 2, this.height / 2 + 50);
+        } else {
+            ctx.fillStyle = '#2ecc71';
+            ctx.fillText("IT'S A TIE!", this.width / 2, this.height / 2 + 50);
+        }
+
+        // Restart prompts
+        ctx.fillStyle = '#7f8c8d';
+        ctx.font = 'bold 18px Arial';
+        const blink = Math.floor(Date.now() / 500) % 2;
+        if (blink) {
+            ctx.fillText('R - Play Again  |  SPACE - Main Menu', this.width / 2, this.height / 2 + 110);
         }
     }
 };

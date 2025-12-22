@@ -1,5 +1,7 @@
 # Maze Shooter
 
+> **MCP Servers Available:** This project inherits GitHub, Vercel, Supabase, and Resend MCP integrations from the parent Jake folder. See `/Jake/CLAUDE.md` for details.
+
 A web-based maze shooter game built with HTML5 Canvas and vanilla JavaScript.
 
 **Live Game:** https://maze-shooter.vercel.app/

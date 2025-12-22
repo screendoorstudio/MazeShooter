@@ -8,7 +8,7 @@ const Game = {
     COINS_PER_LEVEL: 20,
 
     // Game state
-    state: 'modeSelect', // 'modeSelect', 'start', 'playing', 'levelComplete', 'gameOver', 'switchPlayer', 'finalResults', 'versusComplete'
+    state: 'modeSelect', // 'modeSelect', 'start', 'playing', 'levelComplete', 'gameOver', 'switchPlayer', 'finalResults', 'versusComplete', 'versusGameOver'
 
     // Game mode
     twoPlayerMode: false,
@@ -294,7 +294,16 @@ const Game = {
 
             case 'gameOver':
             case 'finalResults':
+            case 'versusGameOver':
                 if (Input.wasJustPressed('KeyR')) {
+                    // Restart same game mode
+                    if (this.versusMode) {
+                        this.startVersusGame();
+                    } else {
+                        this.startGame();
+                    }
+                } else if (Input.wasJustPressed('Space')) {
+                    // Return to main menu
                     this.state = 'modeSelect';
                 }
                 break;
@@ -506,7 +515,7 @@ const Game = {
 
         // Check if either player is eliminated - game over
         if (!this.player.alive || !this.player2.alive) {
-            this.state = 'versusComplete';
+            this.handleVersusGameOver();
         }
     },
 
@@ -585,9 +594,20 @@ const Game = {
             player.respawnAt(spawnPos.x, spawnPos.y);
         } else if (died && player.lives <= 0) {
             // Player eliminated - game over
-            Audio.play('gameOver');
-            this.state = 'versusComplete';
+            this.handleVersusGameOver();
         }
+    },
+
+    handleVersusGameOver() {
+        // Only trigger once
+        if (this.state === 'versusGameOver') return;
+
+        // Add current level coins to totals
+        this.versusStats[1].totalCoins += CoinManager.getCoinsForPlayer(1);
+        this.versusStats[2].totalCoins += CoinManager.getCoinsForPlayer(2);
+
+        Audio.play('gameOver');
+        this.state = 'versusGameOver';
     },
 
     completeVersusLevel() {
@@ -652,6 +672,11 @@ const Game = {
             case 'versusComplete':
                 this.renderVersus();
                 Renderer.drawVersusComplete(this.level, CoinManager, this.versusStats, this.player, this.player2);
+                break;
+
+            case 'versusGameOver':
+                this.renderVersus();
+                Renderer.drawVersusGameOver(this.level, this.versusStats, this.player, this.player2);
                 break;
 
             case 'switchPlayer':
