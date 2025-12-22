@@ -139,8 +139,9 @@ const Game = {
             totalCoins: CoinManager.totalCoins,
             aliens: AlienManager.aliens.map(a => ({ ...a })), // Clone alien states
             level: this.level,
-            totalStars: this.totalStars,
-            gameTime: this.gameTime
+            gameTime: this.gameTime,
+            blocksDestroyedThisLevel: this.player.blocksDestroyedThisLevel,
+            aliensKilled: this.player.aliensKilled
         };
     },
 
@@ -152,7 +153,6 @@ const Game = {
         this.level = saved.level;
         // Use shared maze for this level (both players see same maze)
         this.maze = this.levelMazes[this.level] || saved.maze;
-        this.totalStars = saved.totalStars;
         this.gameTime = saved.gameTime;
 
         // Restore coins
@@ -175,6 +175,14 @@ const Game = {
             alien.directionTimer = a.directionTimer;
             return alien;
         });
+
+        // Restore player state for this level
+        if (saved.blocksDestroyedThisLevel !== undefined) {
+            this.player.blocksDestroyedThisLevel = saved.blocksDestroyedThisLevel;
+        }
+        if (saved.aliensKilled !== undefined) {
+            this.player.aliensKilled = saved.aliensKilled;
+        }
 
         // Clear projectiles
         ProjectileManager.clear();
@@ -240,7 +248,8 @@ const Game = {
         } else {
             // First time for this player - start fresh on level 1
             this.level = this.playerStats[nextPlayer].level;
-            this.totalStars = this.playerStats[nextPlayer].totalStars;
+            this.totalCoins = this.playerStats[nextPlayer].totalCoins;
+            this.aliensKilled = this.playerStats[nextPlayer].aliensKilled;
             this.startLevel();
         }
 
