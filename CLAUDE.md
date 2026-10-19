@@ -282,4 +282,4 @@ git add -A
 git commit -m "Description of changes"
 git push
 ```
-Vercel will automatically rebuild and deploy within ~30 seconds.
+Vercel will automatically rebuild and deploy within ~30 seconds. (The Git link had silently stopped firing; reconnected 2026-10-19. `.vercelignore` keeps CLAUDE.md off the live site.)
